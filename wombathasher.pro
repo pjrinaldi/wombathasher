@@ -1,4 +1,4 @@
-QT += core
+QT += core concurrent
 QT -= gui network
 CONFIG += debug_and_release debug_and_release_target qt build_all console
 INCLUDEPATH += /usr/local/lib/
