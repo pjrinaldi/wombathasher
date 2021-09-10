@@ -20,45 +20,57 @@
 #include "lmdb.h"
 
 
-void DirectoryRecurse(QString dirname, QStringList* filelist)
+void DirectoryRecurse(QString dirname, QStringList* filelist, bool isrelpath)
 {
     QDir curdir(dirname);
     if(curdir.isEmpty())
-	qDebug() << "dir" << dirname << "is empty and will be skipped.";
+	qInfo() << "dir" << dirname << "is empty and will be skipped.";
     else
     {
 	QFileInfoList infolist = curdir.entryInfoList(QDir::NoDotAndDotDot | QDir::Files | QDir::Dirs);
 	for(int i=0; i < infolist.count(); i++)
 	{
 	    QFileInfo tmpinfo = infolist.at(i);
-	    //DirectoryRecurse();
+            if(tmpinfo.isDir())
+                DirectoryRecurse(tmpinfo.absolutePath(), filelist, isrelpath);
+            else if(tmpinfo.isFile())
+            {
+                if(isrelpath)
+                    filelist->append(tmpinfo.filePath());
+                else
+                    filelist->append(tmpinfo.absoluteFilePath());
+            }
 	}
     }
-    /*if(tmpfileinfo->isDir()) // its a directory, need to read its contents..
-    {
-        QDir tmpdir(tmpfileinfo->absoluteFilePath());
-        if(tmpdir.isEmpty())
-            qDebug() << "dir" << tmpfileinfo->fileName() << "is empty and will be skipped.";
-        else
-        {
-            QFileInfoList infolist = tmpdir.entryInfoList(QDir::NoDotAndDotDot | QDir::Files | QDir::Dirs);
-            for(int i=0; i < infolist.count(); i++)
-            {
-                QFileInfo tmpinfo = infolist.at(i);
-                PopulateFile(&tmpinfo, blake3bool, catsigbool, out, logout);
-            }
-        }
-    }
-
-     */ 
 }
 
 QString HashFiles(QString filename)
 {
-    // calculate the blake3 hash here...
-    //qDebug() << "file name:" << filename;
+    QFile bfile(filename);
+    if(!bfile.isOpen())
+        bfile.open(QIODevice::ReadOnly);
+    bfile.seek(0);
+    blake3_hasher hasher;
+    blake3_hasher_init(&hasher);
+    //unsigned char buf[65536];
+    while(!bfile.atEnd())
+    {
+        //size_t bytesread = bfile.read(buf, 65536);
+        QByteArray tmparray = bfile.read(65536);
+        blake3_hasher_update(&hasher, tmparray.data(), tmparray.count());
+    }
+    uint8_t output[BLAKE3_OUT_LEN];
+    blake3_hasher_finalize(&hasher, output, BLAKE3_OUT_LEN);
+    QString srchash = "";
+    for(size_t i=0; i < BLAKE3_OUT_LEN; i++)
+    {
+        //printf("%02x", output[i]);
+        srchash.append(QString("%1").arg(output[i], 2, 16, QChar('0')));
+    }
+    srchash += "," + filename;
+    //printf("\n");
 
-    return filename;
+    return srchash;
 }
 
 int main(int argc, char* argv[])
@@ -99,6 +111,7 @@ int main(int argc, char* argv[])
     bool negmatchbool = parser.isSet(negmatchoption);
     //bool matchedfilebool = parser.isSet(matchedfileoption);
     bool relpathbool = parser.isSet(relpathoption);
+    /*
     qDebug() << "Create hash list name:" << createlistname;
     qDebug() << "Append to hash list:" << appendlistname;
     qDebug() << "Is Recursive mode set:" << recursebool;
@@ -106,9 +119,15 @@ int main(int argc, char* argv[])
     qDebug() << "Is Matching mode set:" << matchbool;
     qDebug() << "Is Negative matching mode set:" << negmatchbool;
     qDebug() << "relative path set:" << relpathbool;
+    */
 
     const QStringList args = parser.positionalArguments();
-    qDebug() << "files to hash:" << args;
+    if(args.count() <= 0)
+    {
+        qInfo() << "No files provided for hashing.";
+        return 1;
+    }
+    //qDebug() << "files to hash:" << args;
 
     // IF FILE ARG IS A DIRECTORY AND -R ISN'T SET, THEN OMIT HASHING THE DIRECTORY AND DON'T GET IT'S CONTENTS...
     // IF -c,-a,-k is not set, then just hash the files and spit out the blake3 hash, absolute file path
@@ -117,6 +136,7 @@ int main(int argc, char* argv[])
     filelist.clear();
     QStringList hashlist;
     hashlist.clear();
+    QString hashlistname = "";
     //QFuture<QString> hashlist;
 
     for(int i=0; i < args.count(); i++)
@@ -127,28 +147,119 @@ int main(int argc, char* argv[])
 	    if(recursebool)
 	    {
 		// NEED TO BUILD A RECURSIVE FUNCTION TO GO INTO EACH DIRECTORY AND ADD FILES TO THE FILE LIST...
-		//DirectoryRecurse(args.at(i), &filelist);
-		qDebug() << "go into direcetory and add files...";
+		DirectoryRecurse(args.at(i), &filelist, relpathbool);
+		//qDebug() << "go into direcetory and add files...";
 	    }
 	    else
-		qInfo() << "Skipped the directory:" << args.at(i) << "-r to hash the contents of the directory.";
+		qInfo() << "Skipped the directory:" << args.at(i) << ", -r to hash the contents of the directory.";
 	}
 	else if(curfi.isFile())
 	{
 	    filelist.append(args.at(i));
-	    //qDebug() << curfi.filePath();
 	}
     }
     if(filelist.count() > 0)
 	hashlist = QtConcurrent::blockingMapped(filelist, HashFiles);
 
+    // GOT FILE LIST TO OPERATE ON AND NOW I NEED TO PROCESS
+    if(parser.isSet(createlistoption) && parser.isSet(appendlistoption))
+    {
+        qInfo() << "Cannot use -c and -a.";
+        return 1;
+    }
+    else
+    {
+        if(parser.isSet(appendlistoption))
+        {
+            if(appendlistname.isEmpty() || appendlistname.isNull())
+            {
+                qInfo() << "No hash list name provided.";
+                return 1;
+            }
+            else
+                hashlistname = appendlistname;
+        }
+        if(parser.isSet(createlistoption))
+        {
+            if(createlistname.isEmpty() || createlistname.isNull())
+            {
+                qInfo() << "No hash list name provided.";
+                return 1;
+            }
+            else
+                hashlistname = createlistname;
+        }
+        if(!hashlistname.isEmpty() && !hashlistname.isNull())
+        {
+            // CREATE HASH LIST HERE
+            int rc;
+            MDB_env* lenv;
+            MDB_dbi ldbi;
+            MDB_val key, data;
+            MDB_txn* txn;
+            MDB_cursor* cursor;
+            char sval[32];
+
+            rc = mdb_env_create(&lenv);
+            QDir tmpdir;
+            tmpdir.mkpath(hashlistname);
+            rc = mdb_env_open(lenv, hashlistname.toStdString().c_str(), 0, 0664);
+            //rc = mdb_txn_begin(lenv, NULL, 0, &txn);
+            //rc = mdb_dbi_open(txn, NULL, 0, &ldbi);
+            /*
+            key.mv_size = sizeof(int);
+            key.mv_data = sval;
+            data.mv_size = sizeof(sval);
+            data.mv_data = sval;
+            */
+            //mdb_txn_abort(txn);
+            //mdb_dbi_close(lenv, ldbi);
+
+            mdb_env_close(lenv);
+            if(parser.isSet(createlistoption) && rc == 0)
+                qInfo() << "Hash List Successfully created." << Qt::endl;
+            if(parser.isSet(appendlistoption) && rc == 0)
+                qInfo() << "Hash List Successfully opened." << Qt::endl;
+        }
+    }
+
     for(int i=0; i < hashlist.count(); i++)
-	qDebug() << "hash result item:" << hashlist.at(i);
-    //for(int i=0; i < hashlist.resultCount(); i++)
-	//qDebug() << "hash result item:" << hashlist.resultAt(i);
+        qDebug() << hashlist.at(i);
 
     return 0;
 }
+
+/*
+	// Note: Most error checking omitted for simplicity
+	rc = mdb_txn_begin(env, NULL, 0, &txn);
+	rc = mdb_dbi_open(txn, NULL, 0, &dbi);
+
+	key.mv_size = sizeof(int);
+	key.mv_data = sval;
+	data.mv_size = sizeof(sval);
+	data.mv_data = sval;
+
+	sprintf(sval, "%03x %d foo bar", 32, 3141592);
+	rc = mdb_put(txn, dbi, &key, &data, 0);
+	rc = mdb_txn_commit(txn);
+	if (rc) {
+		fprintf(stderr, "mdb_txn_commit: (%d) %s\n", rc, mdb_strerror(rc));
+		goto leave;
+	}
+	rc = mdb_txn_begin(env, NULL, MDB_RDONLY, &txn);
+	rc = mdb_cursor_open(txn, dbi, &cursor);
+	while ((rc = mdb_cursor_get(cursor, &key, &data, MDB_NEXT)) == 0) {
+		printf("key: %p %.*s, data: %p %.*s\n",
+			key.mv_data,  (int) key.mv_size,  (char *) key.mv_data,
+			data.mv_data, (int) data.mv_size, (char *) data.mv_data);
+	}
+	mdb_cursor_close(cursor);
+	mdb_txn_abort(txn);
+leave:
+	mdb_dbi_close(env, dbi);
+	mdb_env_close(env);
+	return 0;
+*/
 
 /*
 void PopulateFile(QFileInfo* tmpfileinfo, bool blake3bool, bool catsigbool, QDataStream* out, QTextStream* logout)
