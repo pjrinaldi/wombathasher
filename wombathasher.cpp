@@ -17,11 +17,11 @@
 #include <QtEndian>
 #include <QtConcurrent>
 #include "blake3.h"
-#include "lmdb.h"
+//#include "lmdb.h"
 
 QFile hashfile;
-int rc;
-MDB_env* lenv;
+//int rc;
+//MDB_env* lenv;
 
 void DirectoryRecurse(QString dirname, QStringList* filelist, bool isrelpath)
 {
@@ -76,6 +76,7 @@ void WriteHash(QString hashstring)
 {
     QString hash = hashstring.split(",").at(0);
     QString file = hashstring.split(",").at(1);
+    /*
     MDB_dbi ldbi;
     MDB_val key, data;
     MDB_txn* txn;
@@ -88,6 +89,7 @@ void WriteHash(QString hashstring)
     rc = mdb_put(txn, ldbi, &key, &data, 0);
     mdb_txn_commit(txn);
     mdb_dbi_close(lenv, ldbi);
+    */
     hashfile.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text);
     hashfile.write(hashstring.toStdString().c_str());
     hashfile.write("\n");
@@ -213,17 +215,21 @@ int main(int argc, char* argv[])
 
             // CREATE HASH FILE TXT FILE
             hashfile.setFileName(hashlistname + ".whl");
-            hashfile.open(QIODevice::WriteOnly);
+            hashfile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Append);
             hashfile.close();
 
+            /*
             rc = mdb_env_create(&lenv);
             QDir tmpdir;
             tmpdir.mkpath(hashlistname);
             rc = mdb_env_open(lenv, hashlistname.toStdString().c_str(), 0, 0664);
+            */
 
-            if(parser.isSet(createlistoption) && rc == 0)
+            //if(parser.isSet(createlistoption) && rc == 0)
+            if(parser.isSet(createlistoption))
                 qInfo() << "Hash List Successfully created." << Qt::endl;
-            if(parser.isSet(appendlistoption) && rc == 0)
+            //if(parser.isSet(appendlistoption) && rc == 0)
+            if(parser.isSet(appendlistoption))
                 qInfo() << "Hash List Successfully opened." << Qt::endl;
         }
     }
@@ -233,39 +239,6 @@ int main(int argc, char* argv[])
         WriteHash(hashlist.at(i));
         //qDebug() << hashlist.at(i);
     }
-
-    /*
-    // OUTPUT CHECK...
-    MDB_cursor* cursor;
-    MDB_dbi ldbi;
-    MDB_val key, data;
-    MDB_txn* txn;
-    rc = mdb_txn_begin(lenv, NULL, MDB_RDONLY, &txn);
-    if(rc != 0)
-    {
-        qDebug() << "txn begin error";
-        return 1;
-    }
-    rc = mdb_dbi_open(txn, NULL, 0, &ldbi);
-    if(rc != 0)
-    {
-        qInfo() << "dbi open error" << mdb_strerror(rc);
-        return 1;
-    }
-    rc = mdb_cursor_open(txn, ldbi, &cursor);
-    if(rc != 0)
-    {
-        qInfo() << "cursor open error";
-        return 1;
-    }
-    while ((rc = mdb_cursor_get(cursor, &key, &data, MDB_NEXT)) == 0)
-    {
-        printf("key: %p %.*s, data: %p %.*s\n", key.mv_data,  (int) key.mv_size,  (char *) key.mv_data, data.mv_data, (int) data.mv_size, (char *) data.mv_data);
-    }
-    mdb_cursor_close(cursor);
-    mdb_txn_abort(txn);
-    mdb_dbi_close(lenv, ldbi);
-    */
 
     return 0;
 }
