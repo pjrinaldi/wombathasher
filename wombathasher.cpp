@@ -176,7 +176,11 @@ int main(int argc, char* argv[])
 	}
 	else if(curfi.isFile())
 	{
-	    filelist.append(args.at(i));
+            if(relpathbool)
+                filelist.append(curfi.filePath());
+            else
+                filelist.append(curfi.absoluteFilePath());
+	    //filelist.append(args.at(i));
 	}
     }
     if(filelist.count() > 0)
