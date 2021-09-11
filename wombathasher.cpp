@@ -19,6 +19,9 @@
 #include "blake3.h"
 #include "lmdb.h"
 
+QFile hashfile;
+int rc;
+MDB_env* lenv;
 
 void DirectoryRecurse(QString dirname, QStringList* filelist, bool isrelpath)
 {
@@ -52,7 +55,6 @@ QString HashFiles(QString filename)
     bfile.seek(0);
     blake3_hasher hasher;
     blake3_hasher_init(&hasher);
-    //unsigned char buf[65536];
     while(!bfile.atEnd())
     {
         QByteArray tmparray = bfile.read(65536);
@@ -68,6 +70,27 @@ QString HashFiles(QString filename)
     srchash += "," + filename;
 
     return srchash;
+}
+
+void WriteHash(QString hashstring)
+{
+    QString hash = hashstring.split(",").at(0);
+    QString file = hashstring.split(",").at(1);
+    MDB_dbi ldbi;
+    MDB_val key, data;
+    MDB_txn* txn;
+    rc = mdb_txn_begin(lenv, NULL, 0, &txn);
+    rc = mdb_dbi_open(txn, NULL, 0, &ldbi);
+    key.mv_size = hash.size();
+    key.mv_data = hash.data();
+    data.mv_size = file.size();
+    data.mv_data = file.data();
+    rc = mdb_put(txn, ldbi, &key, &data, 0);
+    mdb_txn_commit(txn);
+    hashfile.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text);
+    hashfile.write(hashstring.toStdString().c_str());
+    hashfile.write("\n");
+    hashfile.close();
 }
 
 int main(int argc, char* argv[])
@@ -104,8 +127,8 @@ int main(int argc, char* argv[])
     QString appendlistname = parser.value(appendlistoption);
     bool recursebool = parser.isSet(recurseoption);
     QString knownlistfile = parser.value(knownoption);
-    bool matchbool = parser.isSet(matchoption);
-    bool negmatchbool = parser.isSet(negmatchoption);
+    //bool matchbool = parser.isSet(matchoption);
+    //bool negmatchbool = parser.isSet(negmatchoption);
     //bool matchedfilebool = parser.isSet(matchedfileoption);
     bool relpathbool = parser.isSet(relpathoption);
     /*
@@ -117,6 +140,7 @@ int main(int argc, char* argv[])
     qDebug() << "Is Negative matching mode set:" << negmatchbool;
     qDebug() << "relative path set:" << relpathbool;
     */
+
 
     const QStringList args = parser.positionalArguments();
     if(args.count() <= 0)
@@ -134,7 +158,6 @@ int main(int argc, char* argv[])
     QStringList hashlist;
     hashlist.clear();
     QString hashlistname = "";
-    //QFuture<QString> hashlist;
 
     for(int i=0; i < args.count(); i++)
     {
@@ -186,31 +209,17 @@ int main(int argc, char* argv[])
         }
         if(!hashlistname.isEmpty() && !hashlistname.isNull())
         {
-            // CREATE HASH LIST HERE
-            int rc;
-            MDB_env* lenv;
-            MDB_dbi ldbi;
-            MDB_val key, data;
-            MDB_txn* txn;
-            MDB_cursor* cursor;
-            char sval[32];
+
+            // CREATE HASH FILE TXT FILE
+            hashfile.setFileName(hashlistname + ".whl");
+            hashfile.open(QIODevice::WriteOnly);
+            hashfile.close();
 
             rc = mdb_env_create(&lenv);
             QDir tmpdir;
             tmpdir.mkpath(hashlistname);
             rc = mdb_env_open(lenv, hashlistname.toStdString().c_str(), 0, 0664);
-            //rc = mdb_txn_begin(lenv, NULL, 0, &txn);
-            //rc = mdb_dbi_open(txn, NULL, 0, &ldbi);
-            /*
-            key.mv_size = sizeof(int);
-            key.mv_data = sval;
-            data.mv_size = sizeof(sval);
-            data.mv_data = sval;
-            */
-            //mdb_txn_abort(txn);
-            //mdb_dbi_close(lenv, ldbi);
 
-            mdb_env_close(lenv);
             if(parser.isSet(createlistoption) && rc == 0)
                 qInfo() << "Hash List Successfully created." << Qt::endl;
             if(parser.isSet(appendlistoption) && rc == 0)
@@ -219,7 +228,40 @@ int main(int argc, char* argv[])
     }
 
     for(int i=0; i < hashlist.count(); i++)
-        qDebug() << hashlist.at(i);
+    {
+        WriteHash(hashlist.at(i));
+        //qDebug() << hashlist.at(i);
+    }
+
+    // OUTPUT CHECK...
+    MDB_cursor* cursor;
+    MDB_dbi ldbi;
+    MDB_val key, data;
+    MDB_txn* txn;
+    rc = mdb_dbi_open(txn, NULL, 0, &ldbi);
+    if(rc != 0)
+    {
+        qInfo() << "dbi open error";
+        return 1;
+    }
+    rc = mdb_txn_begin(lenv, NULL, MDB_RDONLY, &txn);
+    if(rc != 0)
+    {
+        qDebug() << "txn begin error";
+        return 1;
+    }
+    rc = mdb_cursor_open(txn, ldbi, &cursor);
+    if(rc != 0)
+    {
+        qInfo() << "cursor open error";
+        return 1;
+    }
+    while ((rc = mdb_cursor_get(cursor, &key, &data, MDB_NEXT)) == 0)
+    {
+        printf("key: %p %.*s, data: %p %.*s\n", key.mv_data,  (int) key.mv_size,  (char *) key.mv_data, data.mv_data, (int) data.mv_size, (char *) data.mv_data);
+    }
+    mdb_cursor_close(cursor);
+    mdb_txn_abort(txn);
 
     return 0;
 }
@@ -229,12 +271,6 @@ int main(int argc, char* argv[])
 	rc = mdb_txn_begin(env, NULL, 0, &txn);
 	rc = mdb_dbi_open(txn, NULL, 0, &dbi);
 
-	key.mv_size = sizeof(int);
-	key.mv_data = sval;
-	data.mv_size = sizeof(sval);
-	data.mv_data = sval;
-
-	sprintf(sval, "%03x %d foo bar", 32, 3141592);
 	rc = mdb_put(txn, dbi, &key, &data, 0);
 	rc = mdb_txn_commit(txn);
 	if (rc) {
