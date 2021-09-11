@@ -17,11 +17,11 @@
 #include <QtEndian>
 #include <QtConcurrent>
 #include "blake3.h"
-//#include "lmdb.h"
 
 QFile hashfile;
-//int rc;
-//MDB_env* lenv;
+QHash<QString, QString> knownhashes;
+quint8 matchtype = 0;
+bool matchedfilebool = false;
 
 void DirectoryRecurse(QString dirname, QStringList* filelist, bool isrelpath)
 {
@@ -76,24 +76,34 @@ void WriteHash(QString hashstring)
 {
     QString hash = hashstring.split(",").at(0);
     QString file = hashstring.split(",").at(1);
-    /*
-    MDB_dbi ldbi;
-    MDB_val key, data;
-    MDB_txn* txn;
-    rc = mdb_txn_begin(lenv, NULL, 0, &txn);
-    rc = mdb_dbi_open(txn, NULL, 0, &ldbi);
-    key.mv_size = hash.size();
-    key.mv_data = hash.data();
-    data.mv_size = file.size();
-    data.mv_data = file.data();
-    rc = mdb_put(txn, ldbi, &key, &data, 0);
-    mdb_txn_commit(txn);
-    mdb_dbi_close(lenv, ldbi);
-    */
     hashfile.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text);
-    hashfile.write(hashstring.toStdString().c_str());
-    hashfile.write("\n");
+    QTextStream out;
+    out.setDevice(&hashfile);
+    out << hashstring << Qt::endl;
     hashfile.close();
+}
+
+QString HashCompare(QString unknownhashentry)
+{
+    QString unkhash = unknownhashentry.split(",").at(0);
+    QString unkfile = unknownhashentry.split(",").at(1);
+    QString matchstring = "";
+    if(matchtype == 0)
+    {
+        if(knownhashes.contains(unkhash))
+        {
+            matchstring = unkfile;
+            if(matchedfilebool)
+                matchstring += " matches " + knownhashes.value(unkhash);
+        }
+    }
+    else if(matchtype == 1)
+    {
+        if(!knownhashes.contains(unkhash))
+            matchstring = unkfile;
+    }
+
+    return matchstring;
 }
 
 int main(int argc, char* argv[])
@@ -132,18 +142,8 @@ int main(int argc, char* argv[])
     QString knownlistfile = parser.value(knownoption);
     bool matchbool = parser.isSet(matchoption);
     bool negmatchbool = parser.isSet(negmatchoption);
-    bool matchedfilebool = parser.isSet(matchedfileoption);
+    matchedfilebool = parser.isSet(matchedfileoption);
     bool relpathbool = parser.isSet(relpathoption);
-    /*
-    qDebug() << "Create hash list name:" << createlistname;
-    qDebug() << "Append to hash list:" << appendlistname;
-    qDebug() << "Is Recursive mode set:" << recursebool;
-    qDebug() << "Known list file path:" << knownlistfile;
-    qDebug() << "Is Matching mode set:" << matchbool;
-    qDebug() << "Is Negative matching mode set:" << negmatchbool;
-    qDebug() << "relative path set:" << relpathbool;
-    */
-
 
     const QStringList args = parser.positionalArguments();
     if(args.count() <= 0)
@@ -151,10 +151,6 @@ int main(int argc, char* argv[])
         qInfo() << "No files provided for hashing.";
         return 1;
     }
-    //qDebug() << "files to hash:" << args;
-
-    // IF FILE ARG IS A DIRECTORY AND -R ISN'T SET, THEN OMIT HASHING THE DIRECTORY AND DON'T GET IT'S CONTENTS...
-    // IF -c,-a,-k is not set, then just hash the files and spit out the blake3 hash, absolute file path
 
     QStringList filelist;
     filelist.clear();
@@ -180,7 +176,6 @@ int main(int argc, char* argv[])
                 filelist.append(curfi.filePath());
             else
                 filelist.append(curfi.absoluteFilePath());
-	    //filelist.append(args.at(i));
 	}
     }
     if(filelist.count() > 0)
@@ -192,24 +187,44 @@ int main(int argc, char* argv[])
         qInfo() << "Cannot use -c and -a.";
         return 1;
     }
-    else if(matchbool)
+    else if(matchbool || negmatchbool)
     {
-        // check for -k -w -n here.
-        qDebug() << "-m provided";
-    }
-    else if(negmatchbool)
-    {
-        // check for -k -w -n here.
-        qDebug() << "-n provided";
+        if(matchbool && negmatchbool)
+        {
+            qInfo() << "Cannot use -m and -n at the same time.";
+            return 1;
+        }
+        if(matchbool)
+            matchtype = 0;
+        if(negmatchbool)
+            matchtype = 1;
+        if(!parser.isSet(knownoption))
+        {
+            qInfo() << "-k required when using -m";
+            return 1;
+        }
+        knownhashes.clear();
+        QFile comparefile(parser.value(knownoption));
+        if(!comparefile.isOpen())
+            comparefile.open(QIODevice::ReadOnly | QIODevice::Text);
+        while(!comparefile.atEnd())
+        {
+            QString hashentry = QString(comparefile.readLine());
+            knownhashes.insert(hashentry.split(",").at(0), hashentry.split(",").at(1));
+        }
+        comparefile.close();
+        QStringList hashcomparelist = QtConcurrent::blockingMapped(hashlist, HashCompare);
+        if(hashcomparelist.count() > 0)
+        {
+            for(int i=0; i < hashcomparelist.count(); i++)
+            {
+                if(!hashcomparelist.at(i).isEmpty())
+                    qDebug() << hashcomparelist.at(i);
+            }
+        }
     }
     else
     {
-        /*
-        QString knownlistfile = parser.value(knownoption);
-        bool matchbool = parser.isSet(matchoption);
-        bool negmatchbool = parser.isSet(negmatchoption);
-        bool matchedfilebool = parser.isSet(matchedfileoption);
-         */ 
         if(parser.isSet(appendlistoption))
         {
             if(appendlistname.isEmpty() || appendlistname.isNull())
@@ -219,6 +234,8 @@ int main(int argc, char* argv[])
             }
             else
                 hashlistname = appendlistname;
+            if(!hashlistname.endsWith(".whl"))
+                hashlistname += ".whl";
         }
         if(parser.isSet(createlistoption))
         {
@@ -229,34 +246,27 @@ int main(int argc, char* argv[])
             }
             else
                 hashlistname = createlistname;
+            if(!hashlistname.endsWith(".whl"))
+                hashlistname += ".whl";
         }
         if(!hashlistname.isEmpty() && !hashlistname.isNull())
         {
-
             // CREATE HASH FILE TXT FILE
-            hashfile.setFileName(hashlistname + ".whl");
+            hashfile.setFileName(hashlistname);
             hashfile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Append);
             hashfile.close();
-
-            /*
-            rc = mdb_env_create(&lenv);
-            QDir tmpdir;
-            tmpdir.mkpath(hashlistname);
-            rc = mdb_env_open(lenv, hashlistname.toStdString().c_str(), 0, 0664);
-            */
-
-            //if(parser.isSet(createlistoption) && rc == 0)
-            if(parser.isSet(createlistoption))
-                qInfo() << "Hash List Successfully created." << Qt::endl;
-            //if(parser.isSet(appendlistoption) && rc == 0)
-            if(parser.isSet(appendlistoption))
-                qInfo() << "Hash List Successfully opened." << Qt::endl;
             for(int i=0; i < hashlist.count(); i++)
             {
                 WriteHash(hashlist.at(i));
-                //qDebug() << hashlist.at(i);
             }
-            qInfo() << hashlist.count() << "hashes written to the hash list file.";
+            qInfo() << hashlist.count() << "hashes written to the" << hashlistname << "hash list file.";
+        }
+    }
+    if(!parser.isSet(appendlistoption) && !parser.isSet(createlistoption) && !matchbool && !negmatchbool && !matchedfilebool && !parser.isSet(knownoption))
+    {
+        for(int i=0; i < hashlist.count(); i++)
+        {
+            qInfo() << hashlist.at(i);
         }
     }
 
