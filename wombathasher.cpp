@@ -112,7 +112,7 @@ int main(int argc, char* argv[])
     QCommandLineOption knownoption(QStringList() << "k", QCoreApplication::translate("main", "Compare computed hashes to known list"), QCoreApplication::translate("main", "file"));
     QCommandLineOption matchoption(QStringList() << "m", QCoreApplication::translate("main", "Matching mode. Requires -k"));
     QCommandLineOption negmatchoption(QStringList() << "n", QCoreApplication::translate("main", "Negative (Inverse) matching mode. Requires -k"));
-    //QCommandLineOption matchedfileoption(QStringList() << "w", QCoreApplication::translate("main", "Display which known file was matched, requires -m"));
+    QCommandLineOption matchedfileoption(QStringList() << "w", QCoreApplication::translate("main", "Display which known file was matched, requires -m"));
     QCommandLineOption relpathoption(QStringList() << "l", QCoreApplication::translate("main", "Print relative paths for filenames."));
 
     parser.addOption(createlistoption);
@@ -121,7 +121,7 @@ int main(int argc, char* argv[])
     parser.addOption(knownoption);
     parser.addOption(matchoption);
     parser.addOption(negmatchoption);
-    //parser.addOption(matchedfileoption);
+    parser.addOption(matchedfileoption);
     parser.addOption(relpathoption);
 
     parser.process(app);
@@ -130,9 +130,9 @@ int main(int argc, char* argv[])
     QString appendlistname = parser.value(appendlistoption);
     bool recursebool = parser.isSet(recurseoption);
     QString knownlistfile = parser.value(knownoption);
-    //bool matchbool = parser.isSet(matchoption);
-    //bool negmatchbool = parser.isSet(negmatchoption);
-    //bool matchedfilebool = parser.isSet(matchedfileoption);
+    bool matchbool = parser.isSet(matchoption);
+    bool negmatchbool = parser.isSet(negmatchoption);
+    bool matchedfilebool = parser.isSet(matchedfileoption);
     bool relpathbool = parser.isSet(relpathoption);
     /*
     qDebug() << "Create hash list name:" << createlistname;
@@ -192,8 +192,24 @@ int main(int argc, char* argv[])
         qInfo() << "Cannot use -c and -a.";
         return 1;
     }
+    else if(matchbool)
+    {
+        // check for -k -w -n here.
+        qDebug() << "-m provided";
+    }
+    else if(negmatchbool)
+    {
+        // check for -k -w -n here.
+        qDebug() << "-n provided";
+    }
     else
     {
+        /*
+        QString knownlistfile = parser.value(knownoption);
+        bool matchbool = parser.isSet(matchoption);
+        bool negmatchbool = parser.isSet(negmatchoption);
+        bool matchedfilebool = parser.isSet(matchedfileoption);
+         */ 
         if(parser.isSet(appendlistoption))
         {
             if(appendlistname.isEmpty() || appendlistname.isNull())
@@ -235,13 +251,13 @@ int main(int argc, char* argv[])
             //if(parser.isSet(appendlistoption) && rc == 0)
             if(parser.isSet(appendlistoption))
                 qInfo() << "Hash List Successfully opened." << Qt::endl;
+            for(int i=0; i < hashlist.count(); i++)
+            {
+                WriteHash(hashlist.at(i));
+                //qDebug() << hashlist.at(i);
+            }
+            qInfo() << hashlist.count() << "hashes written to the hash list file.";
         }
-    }
-
-    for(int i=0; i < hashlist.count(); i++)
-    {
-        WriteHash(hashlist.at(i));
-        //qDebug() << hashlist.at(i);
     }
 
     return 0;
