@@ -55,7 +55,6 @@ QString HashFiles(QString filename)
     //unsigned char buf[65536];
     while(!bfile.atEnd())
     {
-        //size_t bytesread = bfile.read(buf, 65536);
         QByteArray tmparray = bfile.read(65536);
         blake3_hasher_update(&hasher, tmparray.data(), tmparray.count());
     }
@@ -64,11 +63,9 @@ QString HashFiles(QString filename)
     QString srchash = "";
     for(size_t i=0; i < BLAKE3_OUT_LEN; i++)
     {
-        //printf("%02x", output[i]);
         srchash.append(QString("%1").arg(output[i], 2, 16, QChar('0')));
     }
     srchash += "," + filename;
-    //printf("\n");
 
     return srchash;
 }
@@ -146,9 +143,7 @@ int main(int argc, char* argv[])
 	{
 	    if(recursebool)
 	    {
-		// NEED TO BUILD A RECURSIVE FUNCTION TO GO INTO EACH DIRECTORY AND ADD FILES TO THE FILE LIST...
 		DirectoryRecurse(args.at(i), &filelist, relpathbool);
-		//qDebug() << "go into direcetory and add files...";
 	    }
 	    else
 		qInfo() << "Skipped the directory:" << args.at(i) << ", -r to hash the contents of the directory.";
