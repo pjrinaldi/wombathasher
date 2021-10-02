@@ -148,8 +148,9 @@ int main(int argc, char* argv[])
     const QStringList args = parser.positionalArguments();
     if(args.count() <= 0)
     {
-        qInfo() << "No files provided for hashing.";
-        return 1;
+        qInfo() << "No files provided for hashing.\n";
+        parser.showHelp(1);
+        //return 1;
     }
 
     QStringList filelist;
