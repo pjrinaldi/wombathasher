@@ -7,7 +7,9 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <iostream>
+//#include <iostream>
+//#include <functional>
+/*
 #include <QFile>
 #include <QDataStream>
 #include <QTextStream>
@@ -16,8 +18,13 @@
 #include <QDebug>
 #include <QtEndian>
 #include <QtConcurrent>
-#include "blake3.h"
+*/
+#include "../blake3.h"
 
+FILE* hashfile = NULL;
+
+
+/*
 QFile hashfile;
 QHash<QString, QString> knownhashes;
 quint8 matchtype = 0;
@@ -105,9 +112,10 @@ QString HashCompare(QString unknownhashentry)
 
     return matchstring;
 }
-
+*/
 int main(int argc, char* argv[])
 {
+    /*
     QCoreApplication app(argc, argv);
     QCoreApplication::setApplicationName("wombathasher");
     QCoreApplication::setApplicationVersion("0.1");
@@ -270,6 +278,7 @@ int main(int argc, char* argv[])
             qInfo() << hashlist.at(i);
         }
     }
+    */
 
     return 0;
 }
