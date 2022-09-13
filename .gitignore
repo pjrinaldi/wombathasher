@@ -1,2 +1,4 @@
 *.o
 old
+libblake3.a
+wombathasher

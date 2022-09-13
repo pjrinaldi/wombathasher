@@ -19,7 +19,7 @@
 #include <QtEndian>
 #include <QtConcurrent>
 */
-#include "../blake3.h"
+#include "blake3.h"
 
 FILE* hashfile = NULL;
 
