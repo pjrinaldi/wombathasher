@@ -7,18 +7,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <map>
 //#include <iostream>
-//#include <functional>
-/*
-#include <QFile>
-#include <QDataStream>
-#include <QTextStream>
-#include <QCommandLineParser>
-#include <QDateTime>
-#include <QDebug>
-#include <QtEndian>
-#include <QtConcurrent>
-*/
 #include "blake3.h"
 
 FILE* hashfile = NULL;
@@ -113,8 +103,86 @@ QString HashCompare(QString unknownhashentry)
     return matchstring;
 }
 */
+
+void ShowUsage(int outtype)
+{
+    if(outtype == 0)
+    {
+        printf("Generates a Wombat Hash List (whl) or compare files against a hash list.\n\n");
+        printf("Usage :\n");
+        printf("\twombathasher [OPTIONS] files\n\n");
+        printf("Options :\n");
+	printf("-c <new list>\t: Create new hash list.\n");
+	printf("-a <existing list>\t: Append to an existing hash list.\n");
+	printf("-r\t: Recurse sub-directories.\n");
+	printf("-k <file>\t: Compare computed hashes to known list.\n");
+	printf("-m\t: Matching mode. Requires -k.\n");
+	printf("-n\t: Negative (Inverse) matching mode. Requires -k.\n");
+	printf("-w\t: Display which known file was matched, requires -m.\n");
+	printf("-l\t: Print relative paths for filenames.\n");
+        printf("-v\t: Prints Version information\n");
+        printf("-h\t: Prints help information\n\n");
+	printf("Arguments:\n");
+	printf("files\t: Files to hash for comparison or to add to a hash list.\n");
+        //printf("Example Usage :\n");
+        //printf("wombatimager /dev/sda item1 -v -c \"Case 1\" -e \"My Name\" -n \"Item 1\" -d \"Forensic Image of a 32MB SD Card\"\n");
+    }
+    else if(outtype == 1)
+    {
+        printf("wombatimager v0.1\n");
+	printf("License CC0-1.0: Creative Commons Zero v1.0 Universal\n");
+        printf("This software is in the public domain\n");
+        printf("There is NO WARRANTY, to the extent permitted by law.\n\n");
+        printf("Written by Pasquale Rinaldi\n");
+    }
+};
+
 int main(int argc, char* argv[])
 {
+    if(argc == 1 || (argc == 2 && strcmp(argv[1], "-h") == 0))
+    {
+	ShowUsage(0);
+	return 1;
+    }
+    else if(argc == 2 && strcmp(argv[1], "-v") == 0)
+    {
+	ShowUsage(1);
+	return 1;
+    }
+    else if(argc >= 3)
+    {
+        for(int i=0; i < argc; i++)
+        {
+            printf("Command option %d, %s\n", i, argv[i]);
+	    /*
+            if(strcmp(argv[i], "-v") == 0)
+            {
+                verify=1;
+                printf("verification is set\n");
+            }
+            else if(strcmp(argv[i], "-c") == 0)
+                strcpy(wfimd.casenumber, argv[i+1]);
+            else if(strcmp(argv[i], "-e") == 0)
+                strcpy(wfimd.examiner, argv[i+1]);
+            else if(strcmp(argv[i], "-n") == 0)
+                strcpy(wfimd.evidencenumber, argv[i+1]);
+            else if(strcmp(argv[i], "-d") == 0)
+                strcpy(wfimd.description, argv[i+1]);
+            else if(strcmp(argv[i], "-V") == 0)
+            {
+                ShowUsage(1);
+                return 1;
+            }
+            else if(strcmp(argv[i], "-h") == 0)
+            {
+                ShowUsage(0);
+                return 1;
+            }
+	    */
+        }
+	//printf("Command called: %s %s %s\n", argv[0], argv[1], argv[2]);
+    }
+
     /*
     QCoreApplication app(argc, argv);
     QCoreApplication::setApplicationName("wombathasher");
