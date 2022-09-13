@@ -153,6 +153,8 @@ int main(int argc, char* argv[])
     {
         for(int i=0; i < argc; i++)
         {
+	    if(strchr(argv[i], '-') == NULL)
+		printf("argument: %d option\n", i);
             printf("Command option %d, %s\n", i, argv[i]);
 	    /*
             if(strcmp(argv[i], "-v") == 0)
