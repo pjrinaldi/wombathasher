@@ -8,6 +8,7 @@
 #include <stdlib.h>
 
 #include <map>
+#include <string>
 //#include <iostream>
 #include "blake3.h"
 
@@ -139,6 +140,19 @@ void ShowUsage(int outtype)
 
 int main(int argc, char* argv[])
 {
+    uint8_t isnew = 0;
+    uint8_t isappend = 0;
+    uint8_t isrecursive = 0;
+    uint8_t isknown = 0;
+    uint8_t ismatch = 0;
+    uint8_t isnotmatch = 0;
+    uint8_t isdisplay = 0;
+    uint8_t isrelative = 0;
+
+    std::string newwhl = "";
+    std::string appendwhl = "";
+    std::string knownwhl = "";
+
     if(argc == 1 || (argc == 2 && strcmp(argv[1], "-h") == 0))
     {
 	ShowUsage(0);
@@ -156,21 +170,8 @@ int main(int argc, char* argv[])
 	    if(strchr(argv[i], '-') == NULL)
 		printf("argument: %d option\n", i);
             printf("Command option %d, %s\n", i, argv[i]);
-	    /*
+
             if(strcmp(argv[i], "-v") == 0)
-            {
-                verify=1;
-                printf("verification is set\n");
-            }
-            else if(strcmp(argv[i], "-c") == 0)
-                strcpy(wfimd.casenumber, argv[i+1]);
-            else if(strcmp(argv[i], "-e") == 0)
-                strcpy(wfimd.examiner, argv[i+1]);
-            else if(strcmp(argv[i], "-n") == 0)
-                strcpy(wfimd.evidencenumber, argv[i+1]);
-            else if(strcmp(argv[i], "-d") == 0)
-                strcpy(wfimd.description, argv[i+1]);
-            else if(strcmp(argv[i], "-V") == 0)
             {
                 ShowUsage(1);
                 return 1;
@@ -180,8 +181,41 @@ int main(int argc, char* argv[])
                 ShowUsage(0);
                 return 1;
             }
-	    */
+            else if(strcmp(argv[i], "-c") == 0)
+            {
+                isnew = 1;
+                newwhl = argv[i+1];
+                i++;
+            }
+            else if(strcmp(argv[i], "-a") == 0)
+            {
+                isappend = 1;
+                appendwhl = argv[i+1];
+                i++;
+            }
+            else if(strcmp(argv[i], "-r") == 0)
+                isrecursive = 1;
+            else if(strcmpt(argv[i], "-k") == 0)
+            {
+                isknown = 1;
+                knownwhl = argv[i+1];
+                i++;
+            }
+            else if(strcmp(argv[i], "-m") == 0)
+                ismatch = 1;
+            else if(strcmp(argv[i], "-n") == 0)
+                isnotmatch = 1;
+            else if(strcmp(argv[i], "-w") == 0)
+                isdisplay = 1;
+            else if(strcmp(argv[i], "-l") == 0)
+                isrelative = 1;
+            else
+            {
+                printf("part of files to hash.... %d %s\n", i, argv[i]);
+            }
         }
+        // ONCE THIS IS WORKING, I NEED TO ENSURE OPTION BOOLEANS MATCH, AND PROVIDED INPUTS ARE CORRECT OR EXIT WITH ERROR...
+
 	//printf("Command called: %s %s %s\n", argv[0], argv[1], argv[2]);
     }
 
