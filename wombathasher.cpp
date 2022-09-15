@@ -15,7 +15,13 @@
 
 #include "blake3.h"
 
-
+void ParseDirectory(std::filesystem::path dirpath, std::vector<std::filesystem::path>* filelist, uint8_t isrelative)
+{
+    for(auto const& dir_entry : std::filesystem::directory_iterator(dirpath))
+    {
+	std::cout << dir_entry << "\n";
+    }
+}
 
 /*
 QFile hashfile;
@@ -161,6 +167,8 @@ int main(int argc, char* argv[])
 
     std::vector<std::filesystem::path> filevector;
     filevector.clear();
+    std::vector<std::filesystem::path> filelist;
+    filelist.clear();
 
     if(argc == 1 || (argc == 2 && strcmp(argv[1], "-h") == 0))
     {
@@ -278,6 +286,7 @@ int main(int argc, char* argv[])
 	    {
 		if(isrecursive)
 		{
+		    ParseDirectory(filevector.at(i), &filelist, isrelative);
 		    //printf("Recurse directory(s) here...\n");
 		}
 		else
@@ -290,50 +299,6 @@ int main(int argc, char* argv[])
     }
 
     /*
-    QCoreApplication app(argc, argv);
-    QCoreApplication::setApplicationName("wombathasher");
-    QCoreApplication::setApplicationVersion("0.1");
-    QCommandLineParser parser;
-    parser.setApplicationDescription("Generate a Hash List or compare files against a hash list.");
-    parser.addHelpOption();
-    parser.addVersionOption();
-    parser.addPositionalArgument("files", QCoreApplication::translate("main", "Files to hash for comparison or to add to a hash list."));
-    QCommandLineOption createlistoption(QStringList() << "c", QCoreApplication::translate("main", "Create New Hash List"), QCoreApplication::translate("main", "new list"));
-    QCommandLineOption appendlistoption(QStringList() << "a", QCoreApplication::translate("main", "Append to Existing Hash List"), QCoreApplication::translate("main", "existing list"));
-    QCommandLineOption recurseoption(QStringList() << "r", QCoreApplication::translate("main", "Recurse sub-directories"));
-    QCommandLineOption knownoption(QStringList() << "k", QCoreApplication::translate("main", "Compare computed hashes to known list"), QCoreApplication::translate("main", "file"));
-    QCommandLineOption matchoption(QStringList() << "m", QCoreApplication::translate("main", "Matching mode. Requires -k"));
-    QCommandLineOption negmatchoption(QStringList() << "n", QCoreApplication::translate("main", "Negative (Inverse) matching mode. Requires -k"));
-    QCommandLineOption matchedfileoption(QStringList() << "w", QCoreApplication::translate("main", "Display which known file was matched, requires -m"));
-    QCommandLineOption relpathoption(QStringList() << "l", QCoreApplication::translate("main", "Print relative paths for filenames."));
-
-    parser.addOption(createlistoption);
-    parser.addOption(appendlistoption);
-    parser.addOption(recurseoption);
-    parser.addOption(knownoption);
-    parser.addOption(matchoption);
-    parser.addOption(negmatchoption);
-    parser.addOption(matchedfileoption);
-    parser.addOption(relpathoption);
-
-    parser.process(app);
-
-    QString createlistname = parser.value(createlistoption);
-    QString appendlistname = parser.value(appendlistoption);
-    bool recursebool = parser.isSet(recurseoption);
-    QString knownlistfile = parser.value(knownoption);
-    bool matchbool = parser.isSet(matchoption);
-    bool negmatchbool = parser.isSet(negmatchoption);
-    matchedfilebool = parser.isSet(matchedfileoption);
-    bool relpathbool = parser.isSet(relpathoption);
-
-    const QStringList args = parser.positionalArguments();
-    if(args.count() <= 0)
-    {
-        qInfo() << "No files provided for hashing.\n";
-        parser.showHelp(1);
-        //return 1;
-    }
 
     QStringList filelist;
     filelist.clear();
