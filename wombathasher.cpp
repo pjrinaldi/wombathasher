@@ -8,13 +8,13 @@
 #include <stdlib.h>
 
 #include <map>
+#include <vector>
 #include <string>
 #include <filesystem>
 #include <iostream>
 
 #include "blake3.h"
 
-FILE* hashfile = NULL;
 
 
 /*
@@ -142,6 +142,7 @@ void ShowUsage(int outtype)
 
 int main(int argc, char* argv[])
 {
+    //FILE* hashfile = NULL;
     uint8_t isnew = 0;
     uint8_t isappend = 0;
     uint8_t isrecursive = 0;
@@ -158,6 +159,9 @@ int main(int argc, char* argv[])
     std::filesystem::path appendpath;
     std::filesystem::path knownpath;
 
+    std::vector<std::filesystem::path> filevector;
+    filevector.clear();
+
     if(argc == 1 || (argc == 2 && strcmp(argv[1], "-h") == 0))
     {
 	ShowUsage(0);
@@ -170,7 +174,7 @@ int main(int argc, char* argv[])
     }
     else if(argc >= 3)
     {
-        for(int i=0; i < argc; i++)
+        for(int i=1; i < argc; i++)
         {
 	    /*
 	    if(strchr(argv[i], '-') == NULL)
@@ -218,7 +222,8 @@ int main(int argc, char* argv[])
                 isrelative = 1;
             else
             {
-                printf("part of files to hash.... %d %s\n", i, argv[i]);
+		filevector.push_back(std::filesystem::absolute(argv[i]));
+                //printf("part of files to hash.... %d %s\n", i, argv[i]);
             }
         }
 	// ALSO NEED TO CHECK THE ARGUMENTS IF THEY ARE COMBINED AS IN -rmwl
@@ -263,6 +268,24 @@ int main(int argc, char* argv[])
 	    return 1;
 	}
 
+	for(int i=0; i < filevector.size(); i++)
+	{
+	    if(std::filesystem::is_regular_file(filevector.at(i)))
+	    {
+		//printf("hash and add %s file here\n", filevector.at(i).c_str());
+	    }
+	    else if(std::filesystem::is_directory(filevector.at(i)))
+	    {
+		if(isrecursive)
+		{
+		    //printf("Recurse directory(s) here...\n");
+		}
+		else
+		{
+		    printf("Directory %s skipped. Use -r to recurse directory\n", filevector.at(i).c_str());
+		}
+	    }
+	}
 	//printf("Command called: %s %s %s\n", argv[0], argv[1], argv[2]);
     }
 
