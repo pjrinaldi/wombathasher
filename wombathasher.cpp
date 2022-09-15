@@ -9,7 +9,9 @@
 
 #include <map>
 #include <string>
-//#include <iostream>
+#include <filesystem>
+#include <iostream>
+
 #include "blake3.h"
 
 FILE* hashfile = NULL;
@@ -149,9 +151,12 @@ int main(int argc, char* argv[])
     uint8_t isdisplay = 0;
     uint8_t isrelative = 0;
 
-    std::string newwhl = "";
-    std::string appendwhl = "";
-    std::string knownwhl = "";
+    std::string newwhlstr = "";
+    std::string appendwhlstr = "";
+    std::string knownwhlstr = "";
+    std::filesystem::path newpath;
+    std::filesystem::path appendpath;
+    std::filesystem::path knownpath;
 
     if(argc == 1 || (argc == 2 && strcmp(argv[1], "-h") == 0))
     {
@@ -167,9 +172,11 @@ int main(int argc, char* argv[])
     {
         for(int i=0; i < argc; i++)
         {
+	    /*
 	    if(strchr(argv[i], '-') == NULL)
 		printf("argument: %d option\n", i);
             printf("Command option %d, %s\n", i, argv[i]);
+	    */
 
             if(strcmp(argv[i], "-v") == 0)
             {
@@ -184,21 +191,21 @@ int main(int argc, char* argv[])
             else if(strcmp(argv[i], "-c") == 0)
             {
                 isnew = 1;
-                newwhl = argv[i+1];
+                newwhlstr = argv[i+1];
                 i++;
             }
             else if(strcmp(argv[i], "-a") == 0)
             {
                 isappend = 1;
-                appendwhl = argv[i+1];
+                appendwhlstr = argv[i+1];
                 i++;
             }
             else if(strcmp(argv[i], "-r") == 0)
                 isrecursive = 1;
-            else if(strcmpt(argv[i], "-k") == 0)
+            else if(strcmp(argv[i], "-k") == 0)
             {
                 isknown = 1;
-                knownwhl = argv[i+1];
+                knownwhlstr = argv[i+1];
                 i++;
             }
             else if(strcmp(argv[i], "-m") == 0)
@@ -214,7 +221,47 @@ int main(int argc, char* argv[])
                 printf("part of files to hash.... %d %s\n", i, argv[i]);
             }
         }
-        // ONCE THIS IS WORKING, I NEED TO ENSURE OPTION BOOLEANS MATCH, AND PROVIDED INPUTS ARE CORRECT OR EXIT WITH ERROR...
+	// ALSO NEED TO CHECK THE ARGUMENTS IF THEY ARE COMBINED AS IN -rmwl
+	if(isnew)
+	{
+	    newpath = std::filesystem::absolute(newwhlstr);
+	    //std::cout << "absolute path for new: " << newpath << "\n";
+	}
+	if(isappend)
+	{
+	    appendpath = std::filesystem::absolute(appendwhlstr);
+	    //std::cout << "absolute path for append: " << appendpath << "\n";
+	}
+	if(isknown)
+	{
+	    knownpath = std::filesystem::absolute(knownwhlstr);
+	    //std::cout << "absolute path for known: " << knownpath << "\n";
+	}
+	if(isnew && isappend)
+	{
+	    printf("You cannot create a new and append to an existing wombat hash list (whl) file.\n");
+	    return 1;
+	}
+	if(ismatch && !isknown || ismatch && isnotmatch || isnotmatch && !isknown)
+	{
+	    printf("(Not) Match requires a known whl file, cannot match/not match at the same time\n");
+	    return 1;
+	}
+	if(isnew && std::filesystem::exists(newwhlstr))
+	{
+	    printf("Wombat Hash List (whl) file %s already exists. Cannot Create, try to append (-a)\n", newwhlstr.c_str());
+	    return 1;
+	}
+	if(isappend && !std::filesystem::exists(appendwhlstr))
+	{
+	    printf("Wombat Hash List (whl) file %s does not exist. Cannot Append, try to create (-c)\n", appendwhlstr.c_str());
+	    return 1;
+	}
+	if(isknown && !std::filesystem::exists(knownwhlstr))
+	{
+	    printf("Known wombat hash list (whl) file %s does not exist\n", knownwhlstr.c_str());
+	    return 1;
+	}
 
 	//printf("Command called: %s %s %s\n", argv[0], argv[1], argv[2]);
     }
