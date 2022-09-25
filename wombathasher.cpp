@@ -32,53 +32,28 @@ void ParseDirectory(std::filesystem::path dirpath, std::vector<std::filesystem::
 
 std::string HashFile(std::string filename)
 {
-    std::fstream tmpstream;
-    tmpstream.open(filename, std::ios::in | std::ios::binary);
-    tmpstream.seekg(0, tmpstream.beg);
-    tmpstream.close();
+    FILE* tmpfile = NULL;
+    char tmpchar[65536];
+    tmpfile = fopen(filename.c_str(), "rb");
+    fseek(tmpfile, 0, SEEK_SET);
+    blake3_hasher hasher;
+    blake3_hasher_init(&hasher);
+    while(!feof(tmpfile))
+    {
+        fread(tmpchar, sizeof(tmpchar), 1, tmpfile);
+        blake3_hasher_update(&hasher, tmpchar, sizeof(tmpchar));
+    }
+    fclose(tmpfile);
+    uint8_t output[BLAKE3_OUT_LEN];
+    blake3_hasher_finalize(&hasher, output, BLAKE3_OUT_LEN);
+    std::stringstream ss;
+    for(int i=0; i < BLAKE3_OUT_LEN; i++)
+        ss << std::hex << (int)output[i]; 
+    std::string srcmd5 = ss.str();
+    return srcmd5 + "," + filename;
 }
 
 /*
-QFile hashfile;
-QHash<QString, QString> knownhashes;
-quint8 matchtype = 0;
-bool matchedfilebool = false;
-
-QString HashFiles(QString filename)
-{
-    QFile bfile(filename);
-    if(!bfile.isOpen())
-        bfile.open(QIODevice::ReadOnly);
-    bfile.seek(0);
-    blake3_hasher hasher;
-    blake3_hasher_init(&hasher);
-    while(!bfile.atEnd())
-    {
-        QByteArray tmparray = bfile.read(65536);
-        blake3_hasher_update(&hasher, tmparray.data(), tmparray.count());
-    }
-    uint8_t output[BLAKE3_OUT_LEN];
-    blake3_hasher_finalize(&hasher, output, BLAKE3_OUT_LEN);
-    QString srchash = "";
-    for(size_t i=0; i < BLAKE3_OUT_LEN; i++)
-    {
-        srchash.append(QString("%1").arg(output[i], 2, 16, QChar('0')));
-    }
-    srchash += "," + filename;
-
-    return srchash;
-}
-
-void WriteHash(QString hashstring)
-{
-    QString hash = hashstring.split(",").at(0);
-    QString file = hashstring.split(",").at(1);
-    hashfile.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text);
-    QTextStream out;
-    out.setDevice(&hashfile);
-    out << hashstring << Qt::endl;
-    hashfile.close();
-}
 
 QString HashCompare(QString unknownhashentry)
 {
@@ -290,31 +265,77 @@ int main(int argc, char* argv[])
 	}
     }
     // GOT THE LIST OF FIlES (filelist), NOW I NEED TO HASH AND HANDLE ACCORDING TO OPTIONS 
-    if(isnew) // create/open whl file
+    if(isnew || isappend)
     {
-        std::string whlfile = newpath.string();
-        std::size_t found = whlfile.rfind(".whl");
-        if(found == -1)
-            whlfile += ".whl";
         std::fstream whlstream;
-        whlstream.open(whlfile, std::ios::out);
+        if(isnew) // create/open whl file
+        {
+            std::string whlfile = newpath.string();
+            std::size_t found = whlfile.rfind(".whl");
+            if(found == -1)
+                whlfile += ".whl";
+            whlstream.open(whlfile, std::ios::out);
+        }
+        if(isappend) // append to existing whl file
+        {
+            std::string whlfile = appendpath.string();
+            whlstream.open(whlfile, std::ios::out | std::ios::app);
+        }
         for(int i=0; i < filelist.size(); i++)
         {
-
+            std::string entrystring = HashFile(filelist.at(i).string());
+            whlstream << entrystring << "\n";
         }
         whlstream.close();
-        /*
-            // CREATE HASH FILE TXT FILE
-            hashfile.setFileName(hashlistname);
-            hashfile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Append);
-            hashfile.close();
-            for(int i=0; i < hashlist.count(); i++)
-            {
-                WriteHash(hashlist.at(i));
-            }
-            qInfo() << hashlist.count() << "hashes written to the" << hashlistname << "hash list file.";
-        */
     }
+    if(isknown)
+    {
+        if(ismatch)
+        {
+        }
+        if(isnotmatch)
+        {
+        }
+    }
+    /*
+    else if(matchbool || negmatchbool)
+    {
+        if(matchbool && negmatchbool)
+        {
+            qInfo() << "Cannot use -m and -n at the same time.";
+            return 1;
+        }
+        if(matchbool)
+            matchtype = 0;
+        if(negmatchbool)
+            matchtype = 1;
+        if(!parser.isSet(knownoption))
+        {
+            qInfo() << "-k required when using -m";
+            return 1;
+        }
+        knownhashes.clear();
+        QFile comparefile(parser.value(knownoption));
+        if(!comparefile.isOpen())
+            comparefile.open(QIODevice::ReadOnly | QIODevice::Text);
+        while(!comparefile.atEnd())
+        {
+            QString hashentry = QString(comparefile.readLine());
+            knownhashes.insert(hashentry.split(",").at(0), hashentry.split(",").at(1));
+        }
+        comparefile.close();
+        QStringList hashcomparelist = QtConcurrent::blockingMapped(hashlist, HashCompare);
+        if(hashcomparelist.count() > 0)
+        {
+            for(int i=0; i < hashcomparelist.count(); i++)
+            {
+                if(!hashcomparelist.at(i).isEmpty())
+                    qDebug() << hashcomparelist.at(i);
+            }
+        }
+    }
+
+     */ 
 
     return 0;
 }
