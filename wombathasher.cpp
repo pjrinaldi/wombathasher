@@ -40,8 +40,8 @@ std::string HashFile(std::string filename)
     blake3_hasher_init(&hasher);
     while(!feof(tmpfile))
     {
-        fread(tmpchar, sizeof(tmpchar), 1, tmpfile);
-        blake3_hasher_update(&hasher, tmpchar, sizeof(tmpchar));
+        size_t bytesread = fread(tmpchar, sizeof(tmpchar), 1, tmpfile);
+        blake3_hasher_update(&hasher, tmpchar, bytesread);
     }
     fclose(tmpfile);
     uint8_t output[BLAKE3_OUT_LEN];
@@ -304,18 +304,24 @@ int main(int argc, char* argv[])
     }
     if(isknown)
     {
+        // READ KNOWN HASH LIST FILE INTO A VECTOR
         std::ifstream knownstream;
         knownstream.open(knownpath.string(), std::ios::in);
         std::string tmpfile;
         while(std::getline(knownstream, tmpfile))
-        {
             knownhashes.push_back(tmpfile);
-        }
-        if(ismatch)
+        knownstream.close();
+
+        for(int i=0; i < filelist.size(); i++)
         {
-        }
-        if(isnotmatch)
-        {
+            std::string entrystring = HashFile(filelist.at(i).string());
+            std::cout << entrystring << "\n";
+            if(ismatch)
+            {
+            }
+            if(isnotmatch)
+            {
+            }
         }
     }
     /*
