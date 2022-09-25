@@ -53,6 +53,7 @@ std::string HashFile(std::string filename)
     return srcmd5 + "," + filename;
 }
 
+/*
 std::string HashCompare(std::string unknownhashentry)
 {
     std::size_t found = unknownhashentry.find(",");
@@ -63,6 +64,7 @@ std::string HashCompare(std::string unknownhashentry)
 
     return matchstring;
 }
+*/
 
 /*
 
@@ -143,6 +145,8 @@ int main(int argc, char* argv[])
     filevector.clear();
     std::vector<std::filesystem::path> filelist;
     filelist.clear();
+    std::vector<std::string> knownhashes;
+    knownhashes.clear();
 
     if(argc == 1 || (argc == 2 && strcmp(argv[1], "-h") == 0))
     {
@@ -300,6 +304,13 @@ int main(int argc, char* argv[])
     }
     if(isknown)
     {
+        std::ifstream knownstream;
+        knownstream.open(knownpath.string(), std::ios::in);
+        std::string tmpfile;
+        while(std::getline(knownstream, tmpfile))
+        {
+            knownhashes.push_back(tmpfile);
+        }
         if(ismatch)
         {
         }
