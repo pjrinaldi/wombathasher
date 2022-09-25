@@ -53,6 +53,17 @@ std::string HashFile(std::string filename)
     return srcmd5 + "," + filename;
 }
 
+std::string HashCompare(std::string unknownhashentry)
+{
+    std::size_t found = unknownhashentry.find(",");
+    std::string unkhash = unknownhashentry.substr(0, found);
+    std::string unkfile = unknownhashentry.substr(found+1);
+    std::cout << unkfile << " " << unkhash << "\n";
+    std::string matchstring = "";
+
+    return matchstring;
+}
+
 /*
 
 QString HashCompare(QString unknownhashentry)
@@ -112,7 +123,6 @@ void ShowUsage(int outtype)
 
 int main(int argc, char* argv[])
 {
-    //FILE* hashfile = NULL;
     uint8_t isnew = 0;
     uint8_t isappend = 0;
     uint8_t isrecursive = 0;
@@ -340,7 +350,7 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-    /*
+/*
 // CPP program to demonstrate multithreading
 // using three different callables.
 #include <iostream>
@@ -403,125 +413,4 @@ int main()
   
     return 0;
 }
-     */
-
-    /*
-
-    QStringList filelist;
-    filelist.clear();
-    QStringList hashlist;
-    hashlist.clear();
-    QString hashlistname = "";
-
-    for(int i=0; i < args.count(); i++)
-    {
-	QFileInfo curfi(args.at(i));
-	if(curfi.isDir())
-	{
-	    if(recursebool)
-	    {
-		DirectoryRecurse(args.at(i), &filelist, relpathbool);
-	    }
-	    else
-		qInfo() << "Skipped the directory:" << args.at(i) << ", -r to hash the contents of the directory.";
-	}
-	else if(curfi.isFile())
-	{
-            if(relpathbool)
-                filelist.append(curfi.filePath());
-            else
-                filelist.append(curfi.absoluteFilePath());
-	}
-    }
-    if(filelist.count() > 0)
-	hashlist = QtConcurrent::blockingMapped(filelist, HashFiles);
-
-    // GOT FILE LIST TO OPERATE ON AND NOW I NEED TO PROCESS
-    if(parser.isSet(createlistoption) && parser.isSet(appendlistoption))
-    {
-        qInfo() << "Cannot use -c and -a.";
-        return 1;
-    }
-    else if(matchbool || negmatchbool)
-    {
-        if(matchbool && negmatchbool)
-        {
-            qInfo() << "Cannot use -m and -n at the same time.";
-            return 1;
-        }
-        if(matchbool)
-            matchtype = 0;
-        if(negmatchbool)
-            matchtype = 1;
-        if(!parser.isSet(knownoption))
-        {
-            qInfo() << "-k required when using -m";
-            return 1;
-        }
-        knownhashes.clear();
-        QFile comparefile(parser.value(knownoption));
-        if(!comparefile.isOpen())
-            comparefile.open(QIODevice::ReadOnly | QIODevice::Text);
-        while(!comparefile.atEnd())
-        {
-            QString hashentry = QString(comparefile.readLine());
-            knownhashes.insert(hashentry.split(",").at(0), hashentry.split(",").at(1));
-        }
-        comparefile.close();
-        QStringList hashcomparelist = QtConcurrent::blockingMapped(hashlist, HashCompare);
-        if(hashcomparelist.count() > 0)
-        {
-            for(int i=0; i < hashcomparelist.count(); i++)
-            {
-                if(!hashcomparelist.at(i).isEmpty())
-                    qDebug() << hashcomparelist.at(i);
-            }
-        }
-    }
-    else
-    {
-        if(parser.isSet(appendlistoption))
-        {
-            if(appendlistname.isEmpty() || appendlistname.isNull())
-            {
-                qInfo() << "No hash list name provided.";
-                return 1;
-            }
-            else
-                hashlistname = appendlistname;
-            if(!hashlistname.endsWith(".whl"))
-                hashlistname += ".whl";
-        }
-        if(parser.isSet(createlistoption))
-        {
-            if(createlistname.isEmpty() || createlistname.isNull())
-            {
-                qInfo() << "No hash list name provided.";
-                return 1;
-            }
-            else
-                hashlistname = createlistname;
-            if(!hashlistname.endsWith(".whl"))
-                hashlistname += ".whl";
-        }
-        if(!hashlistname.isEmpty() && !hashlistname.isNull())
-        {
-            // CREATE HASH FILE TXT FILE
-            hashfile.setFileName(hashlistname);
-            hashfile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Append);
-            hashfile.close();
-            for(int i=0; i < hashlist.count(); i++)
-            {
-                WriteHash(hashlist.at(i));
-            }
-            qInfo() << hashlist.count() << "hashes written to the" << hashlistname << "hash list file.";
-        }
-    }
-    if(!parser.isSet(appendlistoption) && !parser.isSet(createlistoption) && !matchbool && !negmatchbool && !matchedfilebool && !parser.isSet(knownoption))
-    {
-        for(int i=0; i < hashlist.count(); i++)
-        {
-            qInfo() << hashlist.at(i);
-        }
-    }
-    */
+*/
