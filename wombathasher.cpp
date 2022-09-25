@@ -19,7 +19,11 @@ void ParseDirectory(std::filesystem::path dirpath, std::vector<std::filesystem::
 {
     for(auto const& dir_entry : std::filesystem::recursive_directory_iterator(dirpath))
     {
-	std::cout << dir_entry << "\n";
+        if(isrelative)
+            filelist->push_back(std::filesystem::relative(dir_entry, std::filesystem::current_path()));
+        else
+            filelist->push_back(dir_entry);
+	//std::cout << dir_entry << "\n";
     }
 }
 
@@ -230,7 +234,7 @@ int main(int argc, char* argv[])
                 isrelative = 1;
             else
             {
-		filevector.push_back(std::filesystem::absolute(argv[i]));
+		filevector.push_back(std::filesystem::canonical(argv[i]));
                 //printf("part of files to hash.... %d %s\n", i, argv[i]);
             }
         }
@@ -280,6 +284,10 @@ int main(int argc, char* argv[])
 	{
 	    if(std::filesystem::is_regular_file(filevector.at(i)))
 	    {
+                if(isrelative)
+                    filelist.push_back(std::filesystem::relative(filevector.at(i), std::filesystem::current_path()));
+                else
+                    filelist.push_back(filevector.at(i));
 		//printf("hash and add %s file here\n", filevector.at(i).c_str());
 	    }
 	    else if(std::filesystem::is_directory(filevector.at(i)))
@@ -297,6 +305,9 @@ int main(int argc, char* argv[])
 	}
 	//printf("Command called: %s %s %s\n", argv[0], argv[1], argv[2]);
     }
+
+    for(int i=0; i < filelist.size(); i++)
+        printf("%d - %s\n", i, filelist.at(i).string().c_str());
 
     /*
 
