@@ -17,7 +17,7 @@
 
 void ParseDirectory(std::filesystem::path dirpath, std::vector<std::filesystem::path>* filelist, uint8_t isrelative)
 {
-    for(auto const& dir_entry : std::filesystem::directory_iterator(dirpath))
+    for(auto const& dir_entry : std::filesystem::recursive_directory_iterator(dirpath))
     {
 	std::cout << dir_entry << "\n";
     }
