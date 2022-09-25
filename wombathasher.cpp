@@ -137,8 +137,6 @@ void ShowUsage(int outtype)
         printf("-h\t: Prints help information\n\n");
 	printf("Arguments:\n");
 	printf("files\t: Files to hash for comparison or to add to a hash list.\n");
-        //printf("Example Usage :\n");
-        //printf("wombatimager /dev/sda item1 -v -c \"Case 1\" -e \"My Name\" -n \"Item 1\" -d \"Forensic Image of a 32MB SD Card\"\n");
     }
     else if(outtype == 1)
     {
@@ -239,21 +237,27 @@ int main(int argc, char* argv[])
             }
         }
 	// ALSO NEED TO CHECK THE ARGUMENTS IF THEY ARE COMBINED AS IN -rmwl
+
 	if(isnew)
-	{
+        {
+            /*
+            std::size_t found = filestr.find_last_of("/");
+            std::string pathname = filestr.substr(0, found);
+            std::string filename = filestr.substr(found+1);
+            std::filesystem::path initpath = std::filesystem::canonical(pathname + "/");
+            imagepath = initpath.string() + "/" + filename + ".wfi";
+            */
 	    newpath = std::filesystem::absolute(newwhlstr);
-	    //std::cout << "absolute path for new: " << newpath << "\n";
-	}
+        }
 	if(isappend)
-	{
+        {
 	    appendpath = std::filesystem::absolute(appendwhlstr);
-	    //std::cout << "absolute path for append: " << appendpath << "\n";
-	}
+        }
 	if(isknown)
-	{
+        {
 	    knownpath = std::filesystem::absolute(knownwhlstr);
-	    //std::cout << "absolute path for known: " << knownpath << "\n";
-	}
+        }
+        // CHECK FOR INCOMPATIBLE OPTIONS
 	if(isnew && isappend)
 	{
 	    printf("You cannot create a new and append to an existing wombat hash list (whl) file.\n");
@@ -288,26 +292,93 @@ int main(int argc, char* argv[])
                     filelist.push_back(std::filesystem::relative(filevector.at(i), std::filesystem::current_path()));
                 else
                     filelist.push_back(filevector.at(i));
-		//printf("hash and add %s file here\n", filevector.at(i).c_str());
 	    }
 	    else if(std::filesystem::is_directory(filevector.at(i)))
 	    {
 		if(isrecursive)
-		{
 		    ParseDirectory(filevector.at(i), &filelist, isrelative);
-		    //printf("Recurse directory(s) here...\n");
-		}
 		else
-		{
 		    printf("Directory %s skipped. Use -r to recurse directory\n", filevector.at(i).c_str());
-		}
 	    }
 	}
-	//printf("Command called: %s %s %s\n", argv[0], argv[1], argv[2]);
+    }
+    // GOT THE LIST OF FIlES (filelist), NOW I NEED TO HASH AND HANDLE ACCORDING TO OPTIONS 
+    if(isnew) // create/open whl file
+    {
+        std::string whlfile = newpath.string();
+        std::size_t found = whlfile.rfind(".whl");
+        if(found == -1)
+            whlfile += ".whl";
+        //printf("whlfile: %s\n", whlfile.c_str());
     }
 
-    for(int i=0; i < filelist.size(); i++)
-        printf("%d - %s\n", i, filelist.at(i).string().c_str());
+    return 0;
+}
+
+    /*
+// CPP program to demonstrate multithreading
+// using three different callables.
+#include <iostream>
+#include <thread>
+using namespace std;
+  
+// A dummy function
+void foo(int Z)
+{
+    for (int i = 0; i < Z; i++) {
+        cout << "Thread using function"
+               " pointer as callable\n";
+    }
+}
+  
+// A callable object
+class thread_obj {
+public:
+    void operator()(int x)
+    {
+        for (int i = 0; i < x; i++)
+            cout << "Thread using function"
+                  " object as  callable\n";
+    }
+};
+  
+int main()
+{
+    cout << "Threads 1 and 2 and 3 "
+         "operating independently" << endl;
+  
+    // This thread is launched by using 
+    // function pointer as callable
+    thread th1(foo, 3);
+  
+    // This thread is launched by using
+    // function object as callable
+    thread th2(thread_obj(), 3);
+  
+    // Define a Lambda Expression
+    auto f = [](int x) {
+        for (int i = 0; i < x; i++)
+            cout << "Thread using lambda"
+             " expression as callable\n";
+    };
+  
+    // This thread is launched by using 
+    // lamda expression as callable
+    thread th3(f, 3);
+  
+    // Wait for the threads to finish
+    // Wait for thread t1 to finish
+    th1.join();
+  
+    // Wait for thread t2 to finish
+    th2.join();
+  
+    // Wait for thread t3 to finish
+    th3.join();
+  
+    return 0;
+}
+     */
 
     /*
 
@@ -429,6 +500,3 @@ int main(int argc, char* argv[])
         }
     }
     */
-
-    return 0;
-}
