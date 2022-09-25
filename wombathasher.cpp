@@ -12,6 +12,7 @@
 #include <string>
 #include <filesystem>
 #include <iostream>
+#include <fstream>
 
 #include "blake3.h"
 
@@ -27,6 +28,14 @@ void ParseDirectory(std::filesystem::path dirpath, std::vector<std::filesystem::
                 filelist->push_back(dir_entry);
         }
     }
+}
+
+std::string HashFile(std::string filename)
+{
+    std::fstream tmpstream;
+    tmpstream.open(filename, std::ios::in | std::ios::binary);
+    tmpstream.seekg(0, tmpstream.beg);
+    tmpstream.close();
 }
 
 /*
@@ -287,6 +296,13 @@ int main(int argc, char* argv[])
         std::size_t found = whlfile.rfind(".whl");
         if(found == -1)
             whlfile += ".whl";
+        std::fstream whlstream;
+        whlstream.open(whlfile, std::ios::out);
+        for(int i=0; i < filelist.size(); i++)
+        {
+
+        }
+        whlstream.close();
         /*
             // CREATE HASH FILE TXT FILE
             hashfile.setFileName(hashlistname);
