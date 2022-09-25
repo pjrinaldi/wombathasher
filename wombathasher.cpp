@@ -19,11 +19,13 @@ void ParseDirectory(std::filesystem::path dirpath, std::vector<std::filesystem::
 {
     for(auto const& dir_entry : std::filesystem::recursive_directory_iterator(dirpath))
     {
-        if(isrelative)
-            filelist->push_back(std::filesystem::relative(dir_entry, std::filesystem::current_path()));
-        else
-            filelist->push_back(dir_entry);
-	//std::cout << dir_entry << "\n";
+	if(std::filesystem::is_regular_file(dir_entry))
+        {
+            if(isrelative)
+                filelist->push_back(std::filesystem::relative(dir_entry, std::filesystem::current_path()));
+            else
+                filelist->push_back(dir_entry);
+        }
     }
 }
 
@@ -32,30 +34,6 @@ QFile hashfile;
 QHash<QString, QString> knownhashes;
 quint8 matchtype = 0;
 bool matchedfilebool = false;
-
-void DirectoryRecurse(QString dirname, QStringList* filelist, bool isrelpath)
-{
-    QDir curdir(dirname);
-    if(curdir.isEmpty())
-	qInfo() << "dir" << dirname << "is empty and will be skipped.";
-    else
-    {
-	QFileInfoList infolist = curdir.entryInfoList(QDir::NoDotAndDotDot | QDir::Files | QDir::Dirs);
-	for(int i=0; i < infolist.count(); i++)
-	{
-	    QFileInfo tmpinfo = infolist.at(i);
-            if(tmpinfo.isDir())
-                DirectoryRecurse(tmpinfo.absolutePath(), filelist, isrelpath);
-            else if(tmpinfo.isFile())
-            {
-                if(isrelpath)
-                    filelist->append(tmpinfo.filePath());
-                else
-                    filelist->append(tmpinfo.absoluteFilePath());
-            }
-	}
-    }
-}
 
 QString HashFiles(QString filename)
 {
@@ -309,7 +287,17 @@ int main(int argc, char* argv[])
         std::size_t found = whlfile.rfind(".whl");
         if(found == -1)
             whlfile += ".whl";
-        //printf("whlfile: %s\n", whlfile.c_str());
+        /*
+            // CREATE HASH FILE TXT FILE
+            hashfile.setFileName(hashlistname);
+            hashfile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Append);
+            hashfile.close();
+            for(int i=0; i < hashlist.count(); i++)
+            {
+                WriteHash(hashlist.at(i));
+            }
+            qInfo() << hashlist.count() << "hashes written to the" << hashlistname << "hash list file.";
+        */
     }
 
     return 0;
