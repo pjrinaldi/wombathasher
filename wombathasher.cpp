@@ -306,6 +306,7 @@ int main(int argc, char* argv[])
     if(isknown)
     {
         // READ KNOWN HASH LIST FILE INTO A MAP
+	std::string matchstring = "";
         std::ifstream knownstream;
         knownstream.open(knownpath.string(), std::ios::in);
         std::string tmpfile;
@@ -317,9 +318,8 @@ int main(int argc, char* argv[])
 	    knownhashes.insert(std::pair<std::string, std::string>(tmpkey, tmpval));
 	    //std::cout << tmpkey << " | " << tmpval << "\n";
 	}
-            //knownhashes.push_back(tmpfile);
         knownstream.close();
-
+	// COMPARE (COUNT) UNKNOWN HASH TO THE KNOWN LIST
         for(int i=0; i < filelist.size(); i++)
         {
             std::string entrystring = HashFile(filelist.at(i).string());
@@ -327,15 +327,20 @@ int main(int argc, char* argv[])
 	    std::size_t found = entrystring.find(",");
 	    std::string unkhash = entrystring.substr(0, found);
 	    std::string unkfile = entrystring.substr(found+1);
-	    //std::cout << unkfile << " " << unkhash << "\n";
+            matchstring = unkfile;
+	    //std::cout << unkfile << " | " << unkhash << "\n";
 	    uint8_t hashash = knownhashes.count(unkhash);
-            if(ismatch && hashash)
+            if(ismatch && hashash == 1)
             {
-		std::cout << "Hash Found\n";
+                matchstring += " matches " + knownhashes.at(unkhash);
+		std::cout << matchstring << ".\n";
+		//std::cout << "Hash Found\n";
             }
-            if(isnotmatch && !hashash)
+            if(isnotmatch && hashash == 0)
             {
-		std::cout << "Hash Doesn't Match\n";
+		matchstring += " does not match known files.\n";
+		std::cout << matchstring;
+		//std::cout << "Hash Doesn't Match\n";
             }
         }
     }
