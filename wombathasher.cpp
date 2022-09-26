@@ -32,18 +32,18 @@ void ParseDirectory(std::filesystem::path dirpath, std::vector<std::filesystem::
 
 std::string HashFile(std::string filename)
 {
-    FILE* tmpfile = NULL;
+    std::ifstream fin(filename.c_str());
     char tmpchar[65536];
-    tmpfile = fopen(filename.c_str(), "rb");
-    fseek(tmpfile, 0, SEEK_SET);
     blake3_hasher hasher;
     blake3_hasher_init(&hasher);
-    while(!feof(tmpfile))
+    while(fin)
     {
-        size_t bytesread = fread(tmpchar, sizeof(tmpchar), 1, tmpfile);
-        blake3_hasher_update(&hasher, tmpchar, bytesread);
+	fin.read(tmpchar, 65536);
+	size_t cnt = fin.gcount();
+	blake3_hasher_update(&hasher, tmpchar, cnt);
+	if(!cnt)
+	    break;
     }
-    fclose(tmpfile);
     uint8_t output[BLAKE3_OUT_LEN];
     blake3_hasher_finalize(&hasher, output, BLAKE3_OUT_LEN);
     std::stringstream ss;
@@ -145,7 +145,8 @@ int main(int argc, char* argv[])
     filevector.clear();
     std::vector<std::filesystem::path> filelist;
     filelist.clear();
-    std::vector<std::string> knownhashes;
+    //std::vector<std::string> knownhashes;
+    std::map<std::string, std::string> knownhashes;
     knownhashes.clear();
 
     if(argc == 1 || (argc == 2 && strcmp(argv[1], "-h") == 0))
@@ -304,23 +305,37 @@ int main(int argc, char* argv[])
     }
     if(isknown)
     {
-        // READ KNOWN HASH LIST FILE INTO A VECTOR
+        // READ KNOWN HASH LIST FILE INTO A MAP
         std::ifstream knownstream;
         knownstream.open(knownpath.string(), std::ios::in);
         std::string tmpfile;
         while(std::getline(knownstream, tmpfile))
-            knownhashes.push_back(tmpfile);
+	{
+	    std::size_t found = tmpfile.find(",");
+	    std::string tmpkey = tmpfile.substr(0, found);
+	    std::string tmpval = tmpfile.substr(found+1);
+	    knownhashes.insert(std::pair<std::string, std::string>(tmpkey, tmpval));
+	    //std::cout << tmpkey << " | " << tmpval << "\n";
+	}
+            //knownhashes.push_back(tmpfile);
         knownstream.close();
 
         for(int i=0; i < filelist.size(); i++)
         {
             std::string entrystring = HashFile(filelist.at(i).string());
-            std::cout << entrystring << "\n";
-            if(ismatch)
+            //std::cout << entrystring << "\n";
+	    std::size_t found = entrystring.find(",");
+	    std::string unkhash = entrystring.substr(0, found);
+	    std::string unkfile = entrystring.substr(found+1);
+	    //std::cout << unkfile << " " << unkhash << "\n";
+	    uint8_t hashash = knownhashes.count(unkhash);
+            if(ismatch && hashash)
             {
+		std::cout << "Hash Found\n";
             }
-            if(isnotmatch)
+            if(isnotmatch && !hashash)
             {
+		std::cout << "Hash Doesn't Match\n";
             }
         }
     }
