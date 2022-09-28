@@ -13,6 +13,7 @@
 #include <filesystem>
 #include <iostream>
 #include <fstream>
+#include <thread>
 
 #include "blake3.h"
 
