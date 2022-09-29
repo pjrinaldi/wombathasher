@@ -54,45 +54,6 @@ std::string HashFile(std::string filename)
     return srcmd5 + "," + filename;
 }
 
-/*
-std::string HashCompare(std::string unknownhashentry)
-{
-    std::size_t found = unknownhashentry.find(",");
-    std::string unkhash = unknownhashentry.substr(0, found);
-    std::string unkfile = unknownhashentry.substr(found+1);
-    std::cout << unkfile << " " << unkhash << "\n";
-    std::string matchstring = "";
-
-    return matchstring;
-}
-*/
-
-/*
-
-QString HashCompare(QString unknownhashentry)
-{
-    QString unkhash = unknownhashentry.split(",").at(0);
-    QString unkfile = unknownhashentry.split(",").at(1);
-    QString matchstring = "";
-    if(matchtype == 0)
-    {
-        if(knownhashes.contains(unkhash))
-        {
-            matchstring = unkfile;
-            if(matchedfilebool)
-                matchstring += " matches " + knownhashes.value(unkhash);
-        }
-    }
-    else if(matchtype == 1)
-    {
-        if(!knownhashes.contains(unkhash))
-            matchstring = unkfile;
-    }
-
-    return matchstring;
-}
-*/
-
 void ShowUsage(int outtype)
 {
     if(outtype == 0)
@@ -345,45 +306,6 @@ int main(int argc, char* argv[])
             }
         }
     }
-    /*
-    else if(matchbool || negmatchbool)
-    {
-        if(matchbool && negmatchbool)
-        {
-            qInfo() << "Cannot use -m and -n at the same time.";
-            return 1;
-        }
-        if(matchbool)
-            matchtype = 0;
-        if(negmatchbool)
-            matchtype = 1;
-        if(!parser.isSet(knownoption))
-        {
-            qInfo() << "-k required when using -m";
-            return 1;
-        }
-        knownhashes.clear();
-        QFile comparefile(parser.value(knownoption));
-        if(!comparefile.isOpen())
-            comparefile.open(QIODevice::ReadOnly | QIODevice::Text);
-        while(!comparefile.atEnd())
-        {
-            QString hashentry = QString(comparefile.readLine());
-            knownhashes.insert(hashentry.split(",").at(0), hashentry.split(",").at(1));
-        }
-        comparefile.close();
-        QStringList hashcomparelist = QtConcurrent::blockingMapped(hashlist, HashCompare);
-        if(hashcomparelist.count() > 0)
-        {
-            for(int i=0; i < hashcomparelist.count(); i++)
-            {
-                if(!hashcomparelist.at(i).isEmpty())
-                    qDebug() << hashcomparelist.at(i);
-            }
-        }
-    }
-
-     */ 
 
     return 0;
 }
