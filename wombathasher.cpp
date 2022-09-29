@@ -54,6 +54,33 @@ std::string HashFile(std::string filename)
     return srcmd5 + "," + filename;
 }
 
+void HashFileConcurrent(std::string filename, std::string whlfile)
+{
+    std::ifstream fin(filename.c_str());
+    char tmpchar[65536];
+    blake3_hasher hasher;
+    blake3_hasher_init(&hasher);
+    while(fin)
+    {
+	fin.read(tmpchar, 65536);
+	size_t cnt = fin.gcount();
+	blake3_hasher_update(&hasher, tmpchar, cnt);
+	if(!cnt)
+	    break;
+    }
+    uint8_t output[BLAKE3_OUT_LEN];
+    blake3_hasher_finalize(&hasher, output, BLAKE3_OUT_LEN);
+    std::stringstream ss;
+    for(int i=0; i < BLAKE3_OUT_LEN; i++)
+        ss << std::hex << (int)output[i]; 
+    std::string srcmd5 = ss.str();
+    std::string whlstr = srcmd5 + "," + filename + "\n";
+    FILE* whlptr = NULL;
+    whlptr = fopen(whlfile.c_str(), "a");
+    fwrite(whlstr.c_str(), strlen(whlstr.c_str()), 1, whlptr);
+    fclose(whlptr);
+}
+
 void ShowUsage(int outtype)
 {
     if(outtype == 0)
@@ -110,6 +137,9 @@ int main(int argc, char* argv[])
     //std::vector<std::string> knownhashes;
     std::map<std::string, std::string> knownhashes;
     knownhashes.clear();
+
+    //unsigned int threadcount = std::thread::hardware_concurrency();
+    //std::cout << threadcount << " concurrent threads are supported.\n";
 
     if(argc == 1 || (argc == 2 && strcmp(argv[1], "-h") == 0))
     {
@@ -244,6 +274,12 @@ int main(int argc, char* argv[])
     // GOT THE LIST OF FIlES (filelist), NOW I NEED TO HASH AND HANDLE ACCORDING TO OPTIONS 
     if(isnew || isappend)
     {
+	for(int i=0; i < filelist.size(); i++)
+	{
+	    std::thread tmp(HashFileConcurrent, filelist.at(i).string(), newpath.string());
+	    tmp.join();
+	}
+	/*
         std::fstream whlstream;
         if(isnew) // create/open whl file
         {
@@ -264,6 +300,7 @@ int main(int argc, char* argv[])
             whlstream << entrystring << "\n";
         }
         whlstream.close();
+	*/
     }
     if(isknown)
     {
