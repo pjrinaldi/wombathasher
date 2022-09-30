@@ -174,7 +174,6 @@ int main(int argc, char* argv[])
     filevector.clear();
     std::vector<std::filesystem::path> filelist;
     filelist.clear();
-    //std::vector<std::string> knownhashes;
     std::map<std::string, std::string> knownhashes;
     knownhashes.clear();
 
@@ -376,15 +375,6 @@ int main(int argc, char* argv[])
 
 	for(int i=0; i < filelist.size(); i++)
 	{
-	    //std::cout << CompareFile(filelist.at(i).string(), &knownhashes, matchbool);
-	    /*
-	    //std::map<std::string, std::string> knownhashes;
-	    std::packaged_task<std::string(std::string, std::map<std::string, std::string>*, int8_t)> task(CompareFile);
-	    std::future<std::string> result = task.get_future();
-	    std::thread tmptask(std::move(task), filelist.at(i).string(), &knownhashes, matchbool);
-	    tmptask.join();
-	    std::cout << result.get();
-	    */
 	    std::thread tmp(CompareFile, filelist.at(i).string(), &knownhashes, matchbool);
 	    tmp.join();
 	}
