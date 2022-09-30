@@ -14,7 +14,6 @@
 #include <iostream>
 #include <fstream>
 #include <thread>
-#include <future>
 
 #include "blake3.h"
 
@@ -31,31 +30,6 @@ void ParseDirectory(std::filesystem::path dirpath, std::vector<std::filesystem::
         }
     }
 }
-
-/*
-std::string HashFile(std::string filename)
-{
-    std::ifstream fin(filename.c_str());
-    char tmpchar[65536];
-    blake3_hasher hasher;
-    blake3_hasher_init(&hasher);
-    while(fin)
-    {
-	fin.read(tmpchar, 65536);
-	size_t cnt = fin.gcount();
-	blake3_hasher_update(&hasher, tmpchar, cnt);
-	if(!cnt)
-	    break;
-    }
-    uint8_t output[BLAKE3_OUT_LEN];
-    blake3_hasher_finalize(&hasher, output, BLAKE3_OUT_LEN);
-    std::stringstream ss;
-    for(int i=0; i < BLAKE3_OUT_LEN; i++)
-        ss << std::hex << (int)output[i]; 
-    std::string srcmd5 = ss.str();
-    return srcmd5 + "," + filename;
-}
-*/
 
 void HashFile(std::string filename, std::string whlfile)
 {
@@ -84,7 +58,7 @@ void HashFile(std::string filename, std::string whlfile)
     fclose(whlptr);
 }
 
-std::string CompareFile(std::string filename, std::map<std::string, std::string>* knownhashes, int8_t matchbool)
+void CompareFile(std::string filename, std::map<std::string, std::string>* knownhashes, int8_t matchbool)
 {
     std::ifstream fin(filename.c_str());
     char tmpchar[65536];
@@ -117,8 +91,6 @@ std::string CompareFile(std::string filename, std::map<std::string, std::string>
 	matchstring += " does not match known files.\n";
 	std::cout << matchstring;
     }
-
-    return matchstring;
 }
 
 void ShowUsage(int outtype)
@@ -328,28 +300,6 @@ int main(int argc, char* argv[])
 	    std::thread tmp(HashFile, filelist.at(i).string(), whlstr);
 	    tmp.join();
 	}
-	/*
-        std::fstream whlstream;
-        if(isnew) // create/open whl file
-        {
-            std::string whlfile = newpath.string();
-            std::size_t found = whlfile.rfind(".whl");
-            if(found == -1)
-                whlfile += ".whl";
-            whlstream.open(whlfile, std::ios::out);
-        }
-        if(isappend) // append to existing whl file
-        {
-            std::string whlfile = appendpath.string();
-            whlstream.open(whlfile, std::ios::out | std::ios::app);
-        }
-        for(int i=0; i < filelist.size(); i++)
-        {
-            std::string entrystring = HashFile(filelist.at(i).string());
-            whlstream << entrystring << "\n";
-        }
-        whlstream.close();
-	*/
     }
     if(isknown)
     {
@@ -378,32 +328,6 @@ int main(int argc, char* argv[])
 	    std::thread tmp(CompareFile, filelist.at(i).string(), &knownhashes, matchbool);
 	    tmp.join();
 	}
-	/*
-	// COMPARE (COUNT) UNKNOWN HASH TO THE KNOWN LIST
-        for(int i=0; i < filelist.size(); i++)
-        {
-            std::string entrystring = HashFile(filelist.at(i).string());
-            //std::cout << entrystring << "\n";
-	    std::size_t found = entrystring.find(",");
-	    std::string unkhash = entrystring.substr(0, found);
-	    std::string unkfile = entrystring.substr(found+1);
-            matchstring = unkfile;
-	    //std::cout << unkfile << " | " << unkhash << "\n";
-	    uint8_t hashash = knownhashes.count(unkhash);
-            if(ismatch && hashash == 1)
-            {
-                matchstring += " matches " + knownhashes.at(unkhash);
-		std::cout << matchstring << ".\n";
-		//std::cout << "Hash Found\n";
-            }
-            if(isnotmatch && hashash == 0)
-            {
-		matchstring += " does not match known files.\n";
-		std::cout << matchstring;
-		//std::cout << "Hash Doesn't Match\n";
-            }
-        }
-	*/
     }
 
     return 0;
