@@ -58,7 +58,7 @@ void HashFile(std::string filename, std::string whlfile)
     fclose(whlptr);
 }
 
-void CompareFile(std::string filename, std::map<std::string, std::string>* knownhashes, int8_t matchbool)
+void CompareFile(std::string filename, std::map<std::string, std::string>* knownhashes, int8_t matchbool, uint8_t isdisplay)
 {
     std::ifstream fin(filename.c_str());
     char tmpchar[65536];
@@ -83,7 +83,10 @@ void CompareFile(std::string filename, std::map<std::string, std::string>* known
     uint8_t hashash = knownhashes->count(srcmd5);
     if(matchbool == 0 && hashash == 1)
     {
-	matchstring += " matches " + knownhashes->at(srcmd5) + ".\n";
+	matchstring += " matches";
+        if(isdisplay == 1)
+            matchstring += " " + knownhashes->at(srcmd5);
+        matchstring += ".\n";
 	std::cout << matchstring;
     }
     if(matchbool == 1 && hashash == 0)
@@ -116,7 +119,7 @@ void ShowUsage(int outtype)
     }
     else if(outtype == 1)
     {
-        printf("wombatimager v0.1\n");
+        printf("wombathasher v0.3\n");
 	printf("License CC0-1.0: Creative Commons Zero v1.0 Universal\n");
         printf("This software is in the public domain\n");
         printf("There is NO WARRANTY, to the extent permitted by law.\n\n");
@@ -164,60 +167,56 @@ int main(int argc, char* argv[])
     }
     else if(argc >= 3)
     {
-        for(int i=1; i < argc; i++)
+        int i;
+        while((i=getopt(argc, argv, "a:c:hk:lmnrvw")) != -1)
         {
-	    /*
-	    if(strchr(argv[i], '-') == NULL)
-		printf("argument: %d option\n", i);
-            printf("Command option %d, %s\n", i, argv[i]);
-	    */
-
-            if(strcmp(argv[i], "-v") == 0)
+            switch(i)
             {
-                ShowUsage(1);
-                return 1;
-            }
-            else if(strcmp(argv[i], "-h") == 0)
-            {
-                ShowUsage(0);
-                return 1;
-            }
-            else if(strcmp(argv[i], "-c") == 0)
-            {
-                isnew = 1;
-                newwhlstr = argv[i+1];
-                i++;
-            }
-            else if(strcmp(argv[i], "-a") == 0)
-            {
-                isappend = 1;
-                appendwhlstr = argv[i+1];
-                i++;
-            }
-            else if(strcmp(argv[i], "-r") == 0)
-                isrecursive = 1;
-            else if(strcmp(argv[i], "-k") == 0)
-            {
-                isknown = 1;
-                knownwhlstr = argv[i+1];
-                i++;
-            }
-            else if(strcmp(argv[i], "-m") == 0)
-                ismatch = 1;
-            else if(strcmp(argv[i], "-n") == 0)
-                isnotmatch = 1;
-            else if(strcmp(argv[i], "-w") == 0)
-                isdisplay = 1;
-            else if(strcmp(argv[i], "-l") == 0)
-                isrelative = 1;
-            else
-            {
-		filevector.push_back(std::filesystem::canonical(argv[i]));
-                //printf("part of files to hash.... %d %s\n", i, argv[i]);
+                case 'a':
+                    isappend = 1;
+                    appendwhlstr = optarg;
+                    break;
+                case 'c':
+                    isnew = 1;
+                    newwhlstr = optarg;
+                    break;
+                case 'h':
+                    ShowUsage(0);
+                    return 1;
+                    break;
+                case 'k':
+                    isknown = 1;
+                    knownwhlstr = optarg;
+                    break;
+                case 'l':
+                    isrelative = 1;
+                    break;
+                case 'm':
+                    ismatch = 1;
+                    break;
+                case 'n':
+                    isnotmatch = 1;
+                    break;
+                case 'r':
+                    isrecursive = 1;
+                    break;
+                case 'v':
+                    ShowUsage(1);
+                    return 1;
+                    break;
+                case 'w':
+                    isdisplay = 1;
+                    break;
+                default:
+                    printf("unknown option: %s\n", optarg);
+                    return 1;
+                    break;
             }
         }
-	// ALSO NEED TO CHECK THE ARGUMENTS IF THEY ARE COMBINED AS IN -rmwl
-
+        for(int i=optind; i < argc; i++)
+        {
+            filevector.push_back(std::filesystem::canonical(argv[i]));
+        }
 	if(isnew)
         {
             /*
@@ -325,7 +324,7 @@ int main(int argc, char* argv[])
 
 	for(int i=0; i < filelist.size(); i++)
 	{
-	    std::thread tmp(CompareFile, filelist.at(i).string(), &knownhashes, matchbool);
+	    std::thread tmp(CompareFile, filelist.at(i).string(), &knownhashes, matchbool, isdisplay);
 	    tmp.join();
 	}
     }
