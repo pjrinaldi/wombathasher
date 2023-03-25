@@ -52,10 +52,15 @@ void HashFile(std::string filename, std::string whlfile)
         ss << std::hex << (int)output[i]; 
     std::string srcmd5 = ss.str();
     std::string whlstr = srcmd5 + "," + filename + "\n";
-    FILE* whlptr = NULL;
-    whlptr = fopen(whlfile.c_str(), "a");
-    fwrite(whlstr.c_str(), strlen(whlstr.c_str()), 1, whlptr);
-    fclose(whlptr);
+    if(whlfile.compare("") == 0)
+        std::cout << whlstr;
+    else
+    {
+        FILE* whlptr = NULL;
+        whlptr = fopen(whlfile.c_str(), "a");
+        fwrite(whlstr.c_str(), strlen(whlstr.c_str()), 1, whlptr);
+        fclose(whlptr);
+    }
 }
 
 void CompareFile(std::string filename, std::map<std::string, std::string>* knownhashes, int8_t matchbool, uint8_t isdisplay)
@@ -165,6 +170,10 @@ int main(int argc, char* argv[])
 	ShowUsage(1);
 	return 1;
     }
+    else if(argc == 2)
+    {
+        filelist.push_back(std::filesystem::canonical(argv[1]));
+    }
     else if(argc >= 3)
     {
         int i;
@@ -215,7 +224,7 @@ int main(int argc, char* argv[])
         }
         for(int i=optind; i < argc; i++)
         {
-            filevector.push_back(std::filesystem::canonical(argv[i]));
+            filelist.push_back(std::filesystem::canonical(argv[i]));
         }
 	if(isnew)
         {
@@ -327,6 +336,14 @@ int main(int argc, char* argv[])
 	    std::thread tmp(CompareFile, filelist.at(i).string(), &knownhashes, matchbool, isdisplay);
 	    tmp.join();
 	}
+    }
+    if(!isnew && !isappend && !isknown && filelist.size() > 0)
+    {
+        for(int i=0; i < filelist.size(); i++)
+        {
+            std::thread tmp(HashFile, filelist.at(i).string(), "");
+            tmp.join();
+        }
     }
 
     return 0;
