@@ -21,6 +21,7 @@ void ParseDirectory(std::filesystem::path dirpath, std::vector<std::filesystem::
 {
     for(auto const& dir_entry : std::filesystem::recursive_directory_iterator(dirpath))
     {
+	std::cout << "cur item: " << dir_entry << std::endl;
 	if(std::filesystem::is_regular_file(dir_entry))
         {
             if(isrelative)
@@ -172,7 +173,8 @@ int main(int argc, char* argv[])
     }
     else if(argc == 2)
     {
-        filelist.push_back(std::filesystem::canonical(argv[1]));
+        filevector.push_back(std::filesystem::canonical(argv[1]));
+        //filelist.push_back(std::filesystem::canonical(argv[1]));
     }
     else if(argc >= 3)
     {
@@ -224,7 +226,8 @@ int main(int argc, char* argv[])
         }
         for(int i=optind; i < argc; i++)
         {
-            filelist.push_back(std::filesystem::canonical(argv[i]));
+	    filevector.push_back(std::filesystem::canonical(argv[i]));
+            //filelist.push_back(std::filesystem::canonical(argv[i]));
         }
 	if(isnew)
         {
@@ -276,6 +279,7 @@ int main(int argc, char* argv[])
 	{
 	    if(std::filesystem::is_regular_file(filevector.at(i)))
 	    {
+		std::cout << filevector.at(i) << " is a file" << std::endl;
                 if(isrelative)
                     filelist.push_back(std::filesystem::relative(filevector.at(i), std::filesystem::current_path()));
                 else
@@ -283,6 +287,7 @@ int main(int argc, char* argv[])
 	    }
 	    else if(std::filesystem::is_directory(filevector.at(i)))
 	    {
+		std::cout << filevector.at(i) << " is a directory" << std::endl;
 		if(isrecursive)
 		    ParseDirectory(filevector.at(i), &filelist, isrelative);
 		else
@@ -337,6 +342,7 @@ int main(int argc, char* argv[])
 	    tmp.join();
 	}
     }
+    /*
     if(!isnew && !isappend && !isknown && filelist.size() > 0)
     {
         for(int i=0; i < filelist.size(); i++)
@@ -345,6 +351,7 @@ int main(int argc, char* argv[])
             tmp.join();
         }
     }
+    */
 
     return 0;
 }
