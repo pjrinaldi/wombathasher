@@ -17,6 +17,9 @@
 
 #include "blake3.h"
 
+// Copyright 2021-2023 Pasquale J. Rinaldi, Jr.
+// Distributed under the terms of CC0-1.0: Creative Commons Zero v1.0 Universal
+
 void ParseDirectory(std::filesystem::path dirpath, std::vector<std::filesystem::path>* filelist, uint8_t isrelative)
 {
     for(auto const& dir_entry : std::filesystem::recursive_directory_iterator(dirpath))
@@ -157,9 +160,6 @@ int main(int argc, char* argv[])
     filelist.clear();
     std::map<std::string, std::string> knownhashes;
     knownhashes.clear();
-
-    //unsigned int threadcount = std::thread::hardware_concurrency();
-    //std::cout << threadcount << " concurrent threads are supported.\n";
 
     if(argc == 1 || (argc == 2 && strcmp(argv[1], "-h") == 0))
     {
@@ -311,7 +311,6 @@ int main(int argc, char* argv[])
 	    std::string tmpkey = tmpfile.substr(0, found);
 	    std::string tmpval = tmpfile.substr(found+1);
 	    knownhashes.insert(std::pair<std::string, std::string>(tmpkey, tmpval));
-	    //std::cout << tmpkey << " | " << tmpval << "\n";
 	}
         knownstream.close();
 	int8_t matchbool = -1;
