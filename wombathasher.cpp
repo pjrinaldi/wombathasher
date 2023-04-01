@@ -125,7 +125,7 @@ void ShowUsage(int outtype)
     }
     else if(outtype == 1)
     {
-        printf("wombathasher v0.3\n");
+        printf("wombathasher v0.4\n");
 	printf("License CC0-1.0: Creative Commons Zero v1.0 Universal\n");
         printf("This software is in the public domain\n");
         printf("There is NO WARRANTY, to the extent permitted by law.\n\n");
@@ -218,11 +218,6 @@ int main(int argc, char* argv[])
         {
 	    filevector.push_back(std::filesystem::canonical(argv[i]));
         }
-        /*
-        std::cout << "filevector size: " << filevector.size() << std::endl;
-        for(int i=0; i < filevector.size(); i++)
-            std::cout << "filevector item " << i << ": " << filevector.at(i) << std::endl;
-        */
 	if(isnew)
         {
 	    newpath = std::filesystem::absolute(newwhlstr);
@@ -256,6 +251,11 @@ int main(int argc, char* argv[])
 	    printf("Wombat Hash List (whl) file %s does not exist. Cannot Append, try to create (-c)\n", appendwhlstr.c_str());
 	    return 1;
 	}
+        if(isknown && !ismatch && !isnotmatch)
+        {
+            printf("Known wombat hash list (whl) file requires the (not) match [-(n)m] flag to compare\n");
+            return 1;
+        }
 	if(isknown && !std::filesystem::exists(knownwhlstr))
 	{
 	    printf("Known wombat hash list (whl) file %s does not exist\n", knownwhlstr.c_str());
@@ -265,7 +265,6 @@ int main(int argc, char* argv[])
 	{
 	    if(std::filesystem::is_regular_file(filevector.at(i)))
 	    {
-		//std::cout << filevector.at(i) << " is a file" << std::endl;
                 if(isrelative)
                     filelist.push_back(std::filesystem::relative(filevector.at(i), std::filesystem::current_path()));
                 else
@@ -273,7 +272,6 @@ int main(int argc, char* argv[])
 	    }
 	    else if(std::filesystem::is_directory(filevector.at(i)))
 	    {
-		//std::cout << filevector.at(i) << " is a directory" << std::endl;
 		if(isrecursive)
 		    ParseDirectory(filevector.at(i), &filelist, isrelative);
 		else
