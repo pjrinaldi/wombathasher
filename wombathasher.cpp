@@ -15,7 +15,7 @@
 #include <fstream>
 #include <thread>
 
-#include "blake3.h"
+#include "blake3/blake3.h"
 
 // Copyright 2021-2023 Pasquale J. Rinaldi, Jr.
 // Distributed under the terms of CC0-1.0: Creative Commons Zero v1.0 Universal
